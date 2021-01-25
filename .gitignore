@@ -1,0 +1,6 @@
+.vscode/
+
+conda/
+work/
+results/
+.nextflow*
