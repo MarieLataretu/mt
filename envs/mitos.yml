@@ -1,0 +1,5 @@
+name: mitos
+channels:
+  - bioconda
+dependencies:
+  -mitos=2.0.8

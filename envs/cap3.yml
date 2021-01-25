@@ -1,0 +1,5 @@
+name: cap3
+channels:
+  - bioconda
+dependencies:
+  -cap3=10.2011

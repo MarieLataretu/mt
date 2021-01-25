@@ -1,0 +1,5 @@
+name: kmergenie
+channels:
+  - bioconda
+dependencies:
+  -kmergenie=1.7051
