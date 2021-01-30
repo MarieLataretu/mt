@@ -60,7 +60,7 @@ workflow {
     kmergenie_input(trimmed_paired_reads.map{it -> it[1]}.concat(trimmed_single_reads.map{it -> it[1]}).collect())
     kmergenie(kmergenie_input.out, trimmed_paired_reads.map{it -> it[1]}.concat(trimmed_single_reads.map{it -> it[1]}).collect() )
     soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect(), trimmed_single_reads.map{it -> it[1]}.collect())
-    // soapdenovo2()
+    soapdenovo2(kmergenie.out, soapdenovo2_input.out, trimmed_paired_reads.map{it -> it[1]}.concat(trimmed_single_reads.map{it -> it[1]}).collect())
 }
 
 def helpMSG() {

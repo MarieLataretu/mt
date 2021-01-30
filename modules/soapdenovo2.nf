@@ -48,36 +48,33 @@ process soapdenovo2_input {
 
     with open('soapdenovo2.config', 'a') as txt:
         for pe_index in range(0, len(${pe_reads_and_info_py}), 3):
-            txt.write('LIB')
+            txt.write('[LIB]\\n')
             insert_size = ${pe_reads_and_info_py}[pe_index + 2]
-            txt.write(f"avg_ins={insert_size}")
-            R1 = ${pe_reads_and_info_py}[pe_index]
-            txt.write(f"q1={R1}")
-            R2 = ${pe_reads_and_info_py}[pe_index + 1]
-            txt.write(f"q2={R2}")
+            txt.write(f"avg_ins={insert_size}\\n")
+            R1 = ${pe_reads_and_info_py}[pe_index].split('/')[-1]
+            txt.write(f"q1={R1}\\n")
+            R2 = ${pe_reads_and_info_py}[pe_index + 1].split('/')[-1]
+            txt.write(f"q2={R2}\\n")
         for se in ${se_reads_py}:
-            txt.write('LIB')
-            txt.write(f"q={se}")
+            txt.write('[LIB]\\n')
+            txt.write(f"q={se}\\n")
     """
 }
-
-
 
 process soapdenovo2 {
     label 'soapdenovo2'
 
     input:
+    each kmer
     path(input_yaml)
-    path(pe_reads)
-    path(se_reads)
+    path(reads)
 
     output:
-    path('spades/scaffolds.fasta')
+    path("soapdenovo2k*_assembly.fasta")
 
     script:
     """
-    spades.py -o spades -t ${task.cpus} --disable-gzip-output --isolate --dataset ${input_yaml}
-    # removes spades assembly meta data        
-    rm -rf K*
+    SOAPdenovo-127mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
+    mv soapdenovo2k${kmer}.contig soapdenovo2k${kmer}'_assembly.fasta'
     """
 }
