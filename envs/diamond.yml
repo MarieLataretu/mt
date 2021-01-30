@@ -2,4 +2,4 @@ name: diamond
 channels:
   - bioconda
 dependencies:
-  -diamond=2.0.6
+  - diamond=2.0.6
