@@ -1,47 +1,45 @@
 process spades_input {
+    label 'python'
+
     input:
     path(pe_reads)
+    path(se_reads)
 
     output:
     path('spades_input.yml')
 
     script:
+    // make lists of strings for the python script
+    pe_reads_py =  pe_reads.collect{ "\"${it}\"" }
+    se_reads_py = se_reads.collect { "\"${it}\"" }
     """
-    echo '[' > spades_input.yml
-    echo ']' >> spades_input.yml
-
+    #!/usr/bin/env python3
+    import os
+    import yaml
+    read_list = []
+    for pe_index in range(0, len(${pe_reads_py}), 2):
+        read_list.append(({'type': 'paired-end', 'orientation': 'fr', 'right reads': [os.path.abspath(${pe_reads_py}[pe_index])], 'left reads': [os.path.abspath(${pe_reads_py}[pe_index+1])]}))
+    for se in ${se_reads_py}:
+        read_list.append(({'single reads': [os.path.abspath(se)], 'type': 'single'}))
+    with open('spades_input.yml', 'w') as yml:
+        yaml.dump(read_list, yml)
     """
 }
-
-    //     for i in range(0, len(input.pe1)):
-    //         out.write('{\n')
-    //         out.write('orientation: "fr",\n')
-    //         out.write('type: "paired-end",\n')
-    //         out.write('right reads: ["' + os.path.abspath(input.pe1[i]) + '"],\n')
-    //         out.write('left reads: ["' + os.path.abspath(input.pe2[i]) + '"]\n')
-    //         out.write('}\n')
-    //         if(i < len(input.pe1)-1 or len(input.se) > 0):
-    //             out.write(',\n')
-    //     for i in range(0, len(input.se)):
-    //         out.write('{\n')
-    //         out.write('type: "single",\n')
-    //         out.write('single reads: ["' + os.path.abspath(input.se[i]) + '"],\n')
-    //         out.write('}\n')
-    //         if(i < len(input.se)-1):
-    //             out.write(',')
 
 process spades {
     label 'spades'
 
     input:
-    path(input)
+    path(input_yaml)
+    path(pe_reads)
+    path(se_reads)
 
     output:
     path('spades/scaffolds.fasta')
 
     script:
     """
-    spades.py -o spades -t ${task.cpus} --disable-gzip-output --isolate --dataset ${input}
+    spades.py -o spades -t ${task.cpus} --disable-gzip-output --isolate --dataset ${input_yaml}
     # removes spades assembly meta data        
     rm -rf K*
     """

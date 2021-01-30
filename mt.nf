@@ -29,6 +29,7 @@ if (params.help) { exit 0, helpMSG() }
 include {fastqc as fastqcPre; fastqc as fastqcPost} from './modules/fastqc'
 include {fastp; get_insert_peak_from_fastp} from './modules/fastp'
 include {spades_input; spades} from './modules/spades'
+include {kmergenie_input; kmergenie; soapdenovo2_input; soapdenovo2} from './modules/soapdenovo2'
 
 if ( params.genus ) {
     genus_ch = Channel.value( params.genus )
@@ -50,12 +51,16 @@ workflow {
     get_insert_peak_from_fastp(fastp.out.json_report.filter { it[2] == 'paired' })
     // join insert peak value to read Channel
     trimmed_paired_reads = fastp.out.sample_trimmed.filter { it[2] == 'paired' }.join(get_insert_peak_from_fastp.out, by: [0,0])
-
     trimmed_single_reads = fastp.out.sample_trimmed.filter { it[2] == 'single' }
-
+    
     // assemblies
-    // spades_input(fastp.out.sample_trimmed.filter { it[2] == 'paired' }.collect().view(), fastp.out.sample_trimmed.filter { it[2] == 'single' }.collect().view()) 
-    // spades(spades_input.out)
+    spades_input(trimmed_paired_reads.map{it -> it[1]}.collect(), trimmed_single_reads.map{it -> it[1]}.collect())
+    spades(spades_input.out, trimmed_paired_reads.map{it -> it[1]}.collect(), trimmed_single_reads.map{it -> it[1]}.collect())
+    
+    kmergenie_input(trimmed_paired_reads.map{it -> it[1]}.concat(trimmed_single_reads.map{it -> it[1]}).collect())
+    kmergenie(kmergenie_input.out, trimmed_paired_reads.map{it -> it[1]}.concat(trimmed_single_reads.map{it -> it[1]}).collect() )
+    soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect(), trimmed_single_reads.map{it -> it[1]}.collect())
+    // soapdenovo2()
 }
 
 def helpMSG() {
