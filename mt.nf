@@ -26,10 +26,10 @@ nextflow.enable.dsl=2
 // terminal prints
 if (params.help) { exit 0, helpMSG() }
 
-include {fastqc as fastqcPre; fastqc as fastqcPost} from './modules/fastqc'
-include {fastp; get_insert_peak_from_fastp} from './modules/fastp'
-include {spades_input; spades} from './modules/spades'
-include {kmergenie_input; kmergenie; soapdenovo2_input; soapdenovo2} from './modules/soapdenovo2'
+include { fastqc as fastqcPre; fastqc as fastqcPost } from './modules/fastqc'
+include { fastp; get_insert_peak_from_fastp; get_mean_read_length_from_fastp } from './modules/fastp'
+include { spades_input; spades } from './modules/spades'
+include { kmergenie_input; kmergenie; soapdenovo2_input; soapdenovo2 } from './modules/soapdenovo2'
 
 if ( params.genus ) {
     genus_ch = Channel.value( params.genus )
@@ -39,6 +39,11 @@ if ( params.pe_reads ) {
 }
 if ( params.se_reads ) {
     single_reads_ch = Channel.fromFilePairs( params.se_reads, size: 1, checkIfExists: true ).map {it -> it + ['single']}
+}
+
+def get_mean_two_third_read_length (mean_read_lengths) {
+    mean_read_len = ( mean_read_lengths.sum() / mean_read_lengths.count() )
+    mean_read_len.map{ it -> Math.round((2/3) * it) }.map{ it % 2 == 0 ? it+1 : it }
 }
 
 workflow {
@@ -52,15 +57,24 @@ workflow {
     // join insert peak value to read Channel
     trimmed_paired_reads = fastp.out.sample_trimmed.filter { it[2] == 'paired' }.join(get_insert_peak_from_fastp.out, by: [0,0])
     trimmed_single_reads = fastp.out.sample_trimmed.filter { it[2] == 'single' }
+
+    all_trimmed_paired_read_paths = trimmed_paired_reads.map{it -> it[1]}.collect()
+    all_trimmed_single_read_paths = trimmed_single_reads.map{it -> it[1]}.collect()
+    all_trimmed_read_paths = all_trimmed_paired_read_paths.concat(all_trimmed_single_read_paths).collect()
     
     // assemblies
-    spades_input(trimmed_paired_reads.map{it -> it[1]}.collect(), trimmed_single_reads.map{it -> it[1]}.collect())
-    spades(spades_input.out, trimmed_paired_reads.map{it -> it[1]}.collect(), trimmed_single_reads.map{it -> it[1]}.collect())
+    spades_input(all_trimmed_paired_read_paths, all_trimmed_single_read_paths)
+    spades(spades_input.out, all_trimmed_read_paths)
     
-    kmergenie_input(trimmed_paired_reads.map{it -> it[1]}.concat(trimmed_single_reads.map{it -> it[1]}).collect())
-    kmergenie(kmergenie_input.out, trimmed_paired_reads.map{it -> it[1]}.concat(trimmed_single_reads.map{it -> it[1]}).collect() )
-    soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect(), trimmed_single_reads.map{it -> it[1]}.collect())
-    soapdenovo2(kmergenie.out, soapdenovo2_input.out, trimmed_paired_reads.map{it -> it[1]}.concat(trimmed_single_reads.map{it -> it[1]}).collect())
+    kmergenie_input(all_trimmed_read_paths)
+    kmergenie(kmergenie_input.out, all_trimmed_read_paths)
+
+    get_mean_read_length_from_fastp(fastp.out.json_report)
+    mean_read_len = get_mean_two_third_read_length(get_mean_read_length_from_fastp.out.toFloat())
+    kmers = mean_read_len.concat(kmergenie.out).collect().map { it.unique() }
+    
+    soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect(), all_trimmed_single_read_paths)
+    soapdenovo2(kmers, soapdenovo2_input.out, all_trimmed_read_paths)
 }
 
 def helpMSG() {
