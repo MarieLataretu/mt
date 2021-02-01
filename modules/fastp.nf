@@ -24,7 +24,9 @@ process fastp {
     }
 }
 
-process get_insert_peak_from_fastp{
+process get_insert_peak_from_fastp {
+    label 'python'
+    
     input:
     tuple val(name), path(json_report), val(mode)
 
@@ -32,17 +34,26 @@ process get_insert_peak_from_fastp{
     tuple val(name), env(insert_peak)
 
     script:
-    """
-    if [ "\$(grep -c '"insert_size"' ${json_report})" -eq 1 ]; then
-        if [ "\$(grep -cP '"peak": [0-9]{1,},' ${json_report})" -eq 1 ]; then
-            insert_peak=\$(grep -P '"peak": [0-9]{1,},' ${json_report} | grep -oP '[0-9]{1,}')
-        else
-            echo "ERROR: Failed to get the insert peak value. No or no unambiguous match for `"peak": [0-9]{1,},`" >&2
-            exit 1
-        fi
+
+    if ( mode == 'paired' )
+        """
+        insert_peak=\$(python3 ${projectDir}/bin/get_insert_peak_from_fastp.py ${json_report})
+        """
     else
-        echo "ERROR: Failed to get the insert peak value. No or no unambiguous match for `"insert_size"`." >&2
-        exit 1
-    fi
+        error "Single-end reads have no insert size."
+}
+
+process get_mean_read_length_from_fastp {
+    label 'python'
+
+    input:
+    tuple val(name), path(json_report), val(mode)
+
+    output:
+    env(mean_read_length)
+
+    script:
+    """
+    mean_read_length=\$(python3 ${projectDir}/bin/get_mean_read_len_from_fastp.py ${json_report} ${mode})
     """
 }
