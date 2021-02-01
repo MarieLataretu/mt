@@ -31,8 +31,7 @@ process spades {
 
     input:
     path(input_yaml)
-    path(pe_reads)
-    path(se_reads)
+    path(reads)
 
     output:
     path('spades/scaffolds.fasta')
