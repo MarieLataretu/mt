@@ -20,12 +20,14 @@ process kmergenie {
     path(reads)
 
     output:
-    env(best_kmer)
+    env(best_kmer), emit: best_kmer
+    path('histograms_report_mqc.html'), emit: report
 
     script:
     """
     kmergenie ${input} -t ${task.cpus} > kmergenie.log
     best_kmer=\$(grep '^best k: ' kmergenie.log | awk '{print \$3}')
+    ln -s histograms_report.html histograms_report_mqc.html
     """
 }
 
@@ -70,11 +72,11 @@ process soapdenovo2 {
     path(reads)
 
     output:
-    path("soapdenovo2k*_assembly.fasta")
+    path("soapdenovo2k*.fasta")
 
     script:
     """
     SOAPdenovo-127mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
-    mv soapdenovo2k${kmer}.contig soapdenovo2k${kmer}'_assembly.fasta'
+    mv soapdenovo2k${kmer}.contig soapdenovo2k${kmer}'.fasta'
     """
 }
