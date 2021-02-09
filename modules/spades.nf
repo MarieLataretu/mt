@@ -34,12 +34,13 @@ process spades {
     path(reads)
 
     output:
-    path('spades/scaffolds.fasta')
+    path('spades/spades.fasta')
 
     script:
     """
     spades.py -o spades -t ${task.cpus} --disable-gzip-output --isolate --dataset ${input_yaml}
     # removes spades assembly meta data        
     rm -rf K*
+    mv spades/scaffolds.fasta spades/spades.fasta
     """
 }
