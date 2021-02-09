@@ -2,4 +2,5 @@ name: kmergenie
 channels:
   - bioconda
 dependencies:
-  - kmergenie
+  - kmergenie=1.7016
+# =1.7051 missing fastqr
