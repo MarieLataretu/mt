@@ -8,18 +8,18 @@ process fastp {
     tuple val(name), path(reads), val(mode)
 
     output:
-    tuple val(name), path("${name}*.trimmed.fastq.gz"), val(mode), emit: sample_trimmed
+    tuple val(name), path("${name}*_trimmed*.fastq.gz"), val(mode), emit: sample_trimmed
     tuple val(name), path("${name}_fastp.json"), val(mode), emit: json_report
 
     script:
     if (mode == 'single') {
     """
-    fastp -i ${reads[0]} -o ${name}.trimmed.fastq.gz --thread ${task.cpus} --json ${name}_fastp.json ${params.fastp_additional_params}
+    fastp -i ${reads[0]} -o ${name}_trimmed.fastq.gz --thread ${task.cpus} --json ${name}_fastp.json ${params.fastp_additional_params}
     """
     }
     else {
     """
-    fastp -i ${reads[0]} -I ${reads[1]} -o ${name}_1.trimmed.fastq.gz -O ${name}_2.trimmed.fastq.gz --thread ${task.cpus} --json ${name}_fastp.json ${params.fastp_additional_params}
+    fastp -i ${reads[0]} -I ${reads[1]} -o ${name}_trimmed_1.fastq.gz -O ${name}_trimmed_2.fastq.gz --thread ${task.cpus} --json ${name}_fastp.json ${params.fastp_additional_params}
     """
     }
 }

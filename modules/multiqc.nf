@@ -19,6 +19,6 @@ process multiqc {
 
     script:
     """
-    multiqc . --cl_config "{ sp: { kmergenie: {fn: 'histograms_report_mqc.html'} } }"
+    multiqc -s . --cl_config "{ sp: { kmergenie: {fn: 'histograms_report_mqc.html'} } }"
     """
 }
