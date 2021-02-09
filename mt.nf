@@ -30,6 +30,7 @@ include { fastqc as fastqcPre; fastqc as fastqcPost } from './modules/fastqc'
 include { fastp; get_insert_peak_from_fastp; get_mean_read_length_from_fastp } from './modules/fastp'
 include { spades_input; spades } from './modules/spades'
 include { kmergenie_input; kmergenie; soapdenovo2_input; soapdenovo2 } from './modules/soapdenovo2'
+include { cap3 } from './modules/cap3'
 include { hisat2index; hisat2; index_bam } from './modules/hisat2'
 include { quast } from './modules/quast'
 include { multiqc } from './modules/multiqc'
@@ -83,13 +84,15 @@ workflow {
 
     assemblies = spades.out.concat(soapdenovo2.out)
 
+    cap3(assemblies)
+
     // map reads back to assembly
     hisat2index(assemblies)
     hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect(), trimmed_paired_reads.map{it -> it[1][1]}.collect(), all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
 
     // summary
-    quast(assemblies.collect())
+    quast(assemblies.mix(cap3.out).collect())
 
     multiqc(fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), kmergenie.out.report, hisat2.out.log.collect(), quast.out.report_tsv)
 
