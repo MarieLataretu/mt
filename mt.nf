@@ -32,6 +32,8 @@ include { spades_input; spades } from './modules/spades'
 include { kmergenie_input; kmergenie; soapdenovo2_input; soapdenovo2 } from './modules/soapdenovo2'
 include { cap3 } from './modules/cap3'
 include { hisat2index; hisat2; index_bam } from './modules/hisat2'
+include { make_blast_db; blast } from './modules/blast'
+include { make_diamond_db ; diamond } from './modules/diamond'
 include { quast } from './modules/quast'
 include { multiqc } from './modules/multiqc'
 
@@ -44,6 +46,8 @@ if ( params.pe_reads ) {
 if ( params.se_reads ) {
     single_reads_ch = Channel.fromFilePairs( params.se_reads, size: 1, checkIfExists: true ).map {it -> it + ['single']}
 }
+
+featureProt_ch = Channel.fromPath( workflow.projectDir + '/assets/featureProt/*.faa', checkIfExists: true )
 
 def get_mean_two_third_read_length (mean_read_lengths) {
     mean_read_len = ( mean_read_lengths.sum() / mean_read_lengths.count() )
@@ -84,7 +88,17 @@ workflow {
 
     assemblies = spades.out.concat(soapdenovo2.out)
 
+    // scaffolding
     cap3(assemblies)
+
+    assemblies_scaffolds = assemblies.concat(cap3.out)
+
+    // blast
+    make_blast_db(assemblies_scaffolds)
+    blast(featureProt_ch.collect(), make_blast_db.out)
+    // diamond
+    make_diamond_db(featureProt_ch)
+    diamond(make_diamond_db.out, assemblies_scaffolds.collect())
 
     // map reads back to assembly
     hisat2index(assemblies)
@@ -92,11 +106,10 @@ workflow {
     index_bam(hisat2.out.sample_bam)
 
     // summary
-    quast(assemblies.mix(cap3.out).collect())
+    quast(assemblies_scaffolds.collect())
 
     multiqc(fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), kmergenie.out.report, hisat2.out.log.collect(), quast.out.report_tsv)
 
-    // blasten
     // ranken & filtern
     
     // mit ref: vgl
