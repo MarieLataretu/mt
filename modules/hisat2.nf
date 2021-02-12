@@ -35,7 +35,7 @@ process hisat2 {
 
     output:
     path("${reference.baseName}.sorted.bam"), emit: sample_bam 
-    path "${reference.baseName}_summary.log", emit: log
+    path("${reference.baseName}_summary.log"), emit: log
 
     script:
     PE1 = "${pe1_reads}".size() > 1 ? '-1 ' + pe1_reads.join(',') : ''
@@ -56,7 +56,7 @@ process index_bam {
     path(bam_file)
 
     output:
-    path("${bam_file}.bai")
+    tuple path(bam_file), path("${bam_file}.bai")
 
     script:
     """
