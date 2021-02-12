@@ -34,6 +34,7 @@ include { cap3 } from './modules/cap3'
 include { hisat2index; hisat2; index_bam } from './modules/hisat2'
 include { make_blast_db; blast } from './modules/blast'
 include { make_diamond_db ; diamond } from './modules/diamond'
+include { get_bed; get_coverage } from './modules/features'
 include { quast } from './modules/quast'
 include { multiqc } from './modules/multiqc'
 
@@ -104,6 +105,10 @@ workflow {
     hisat2index(assemblies)
     hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect(), trimmed_paired_reads.map{it -> it[1][1]}.collect(), all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
+
+    // contig coverage
+    get_bed(index_bam.out)
+    get_coverage(get_bed.out.bam, get_bed.out.bed)
 
     // summary
     quast(assemblies_scaffolds.collect())

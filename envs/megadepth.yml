@@ -1,0 +1,5 @@
+name: megadepth
+channels:
+  - bioconda
+dependencies:
+  - megadepth=1.1.0
