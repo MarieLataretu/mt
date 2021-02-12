@@ -5,11 +5,11 @@ process cap3{
     path(assembly)
 
     output:
-    path('*_cap3.fasta')
+    path('*-cap3.fasta')
 
     script:
     """
     cap3 ${assembly} > cap3.log 2> cap3.log
-    cat ${assembly}.cap.contigs ${assembly}.cap.singlets > ${assembly.baseName}_cap3.fasta
+    cat ${assembly}.cap.contigs ${assembly}.cap.singlets > ${assembly.baseName}-cap3.fasta
     """
 }
