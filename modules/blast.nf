@@ -21,7 +21,7 @@ process blast{
     tuple path(assembly), path(assembly_blast_db)
     
     output:
-    path("*.blast")
+    tuple val(assembly.baseName), path("*.blast")
 
     script:
     """

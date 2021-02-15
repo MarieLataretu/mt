@@ -21,7 +21,7 @@ process diamond{
     each path(assembly)
 
     output:
-    path("*.diamond")
+    tuple val(assembly.baseName), path("*.diamond")
 
     script:
     """

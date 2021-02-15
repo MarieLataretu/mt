@@ -34,7 +34,7 @@ process hisat2 {
     val(additionalParams)
 
     output:
-    path("${reference.baseName}.sorted.bam"), emit: sample_bam 
+    tuple val(reference.baseName), path("${reference.baseName}.sorted.bam"), emit: sample_bam 
     path("${reference.baseName}_summary.log"), emit: log
 
     script:
@@ -53,10 +53,10 @@ process index_bam {
     // else { publishDir "${params.output}/${params.hisat2_dir}", mode: 'copy', pattern: "*.bai" }
 
     input:
-    path(bam_file)
+    tuple val(assembly), path(bam_file)
 
     output:
-    tuple path(bam_file), path("${bam_file}.bai")
+    tuple val(assembly), path(bam_file), path("${bam_file}.bai")
 
     script:
     """
