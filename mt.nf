@@ -34,7 +34,7 @@ include { cap3 } from './modules/cap3'
 include { hisat2index; hisat2; index_bam } from './modules/hisat2'
 include { make_blast_db; blast } from './modules/blast'
 include { make_diamond_db ; diamond } from './modules/diamond'
-include { get_bed; get_coverage } from './modules/features'
+include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pident_filter; pident_filter as diamond_pident_filter; get_features as get_blast_features; get_features as get_diamond_features; collect_features; result_table } from './modules/features'
 include { quast } from './modules/quast'
 include { multiqc } from './modules/multiqc'
 
@@ -102,13 +102,25 @@ workflow {
     diamond(make_diamond_db.out, assemblies_scaffolds.collect())
 
     // map reads back to assembly
-    hisat2index(assemblies)
+    hisat2index(assemblies_scaffolds)
     hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect(), trimmed_paired_reads.map{it -> it[1][1]}.collect(), all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
 
     // contig coverage
     get_bed(index_bam.out)
     get_coverage(get_bed.out.bam, get_bed.out.bed)
+    get_95th_percentile(get_coverage.out)
+
+    // blast features
+    blast_pident_filter(blast.out, 70)
+    get_blast_features('blast', blast_pident_filter.out.groupTuple())
+    // diamond features
+    diamond_pident_filter(diamond.out, 70)
+    get_diamond_features('diamond', diamond_pident_filter.out.groupTuple())
+
+    // collect features
+    collect_features(get_95th_percentile.out.join(get_blast_features.out.join(get_diamond_features.out)))
+    result_table(collect_features.out.map{ it -> it[1] }.collect())
 
     // summary
     quast(assemblies_scaffolds.collect())
