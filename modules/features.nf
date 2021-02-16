@@ -68,10 +68,12 @@ process pident_filter {
     """
     #!/usr/bin/env python3
     import pandas as pd
-
-    df = pd.read_csv("${homo_result}", sep='\\t', header=None, names=['s/qseqid', 'q/sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen'])
-    df = df[ df['pident'] >= int(${threshold}) ]
-    df.to_csv("${homo_result}.pident", sep='\\t', index=False, header=False)
+    try:
+        df = pd.read_csv("${homo_result}", sep='\\t', header=None, names=['s/qseqid', 'q/sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen'])
+        df = df[ df['pident'] >= int(${threshold}) ]
+        df.to_csv("${homo_result}.pident", sep='\\t', index=False, header=False)
+    except pd.errors.EmptyDataError:
+        print("No results for ${homo_result}.")
     """
 }
 
@@ -94,8 +96,11 @@ process get_features {
 
         results = []
         for feature_prot in ${result_list}:
-            df = pd.read_csv(feature_prot, sep='\\t', header=None)
-            results.append(df)
+            try:
+                df = pd.read_csv(feature_prot, sep='\\t', header=None)
+                results.append(df)
+            except pd.errors.EmptyDataError:
+                print(f"No results for {feature_prot}.")
         df = pd.concat(results, axis=0, ignore_index=True)
         df.columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
 
@@ -122,8 +127,11 @@ process get_features {
 
         results = []
         for feature_prot in ${result_list}:
-            df = pd.read_csv(feature_prot, sep='\\t', header=None)
-            results.append(df)
+            try:
+                df = pd.read_csv(feature_prot, sep='\\t', header=None)
+                results.append(df)
+            except pd.errors.EmptyDataError:
+                print(f"No results for {feature_prot}.")
         df = pd.concat(results, axis=0, ignore_index=True)
         df.columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
 
@@ -180,7 +188,9 @@ process collect_features {
 
 process result_table {
     label 'python'
-    echo true
+
+    if ( params.softlink_results ) { publishDir "${params.output}", pattern: 'result.tsv' }
+    else { publishDir "${params.output}", mode: 'copy', pattern: 'result.tsv' }
 
     input:
     path(assembly_result)
