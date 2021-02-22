@@ -19,12 +19,13 @@ process blast{
     input:
     each path(featureProt)
     tuple path(assembly), path(assembly_blast_db)
+    val(genetic_code)
     
     output:
     tuple val(assembly.baseName), path("*.blast")
 
     script:
     """
-    tblastn -num_threads ${task.cpus} -query ${featureProt} -db ${assembly} -evalue 1e-10 -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen" > ${featureProt.baseName}_${assembly.baseName}.blast
+    tblastn -num_threads ${task.cpus} -query ${featureProt} -db ${assembly} -db_gencode ${genetic_code} -evalue 1e-10 -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen" > ${featureProt.baseName}_${assembly.baseName}.blast
     """
 }

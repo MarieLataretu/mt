@@ -101,10 +101,10 @@ workflow {
 
     // blast
     make_blast_db(assemblies_scaffolds)
-    blast(featureProt_ch.collect(), make_blast_db.out)
+    blast(featureProt_ch.collect(), make_blast_db.out, params.genetic_code)
     // diamond
     make_diamond_db(featureProt_ch)
-    diamond(make_diamond_db.out, assemblies_scaffolds.collect())
+    diamond(make_diamond_db.out, assemblies_scaffolds.collect(), params.genetic_code)
 
     // map reads back to assembly
     hisat2index(assemblies_scaffolds)
