@@ -25,6 +25,7 @@ nextflow.enable.dsl=2
 
 // terminal prints
 if (params.help) { exit 0, helpMSG() }
+if ( ! params.pe_reads && ! params.se_reads ) { exit 1, "Read data is required." }
 
 include { fastqc as fastqcPre; fastqc as fastqcPost } from './modules/fastqc'
 include { fastp; get_insert_peak_from_fastp; get_mean_read_length_from_fastp } from './modules/fastp'
@@ -43,9 +44,13 @@ if ( params.genus ) {
 }
 if ( params.pe_reads ) {
     paired_reads_ch = Channel.fromFilePairs( params.pe_reads, size: 2, checkIfExists: true ).map {it -> it + ['paired']}
+} else {
+    paired_reads_ch = Channel.empty()
 }
 if ( params.se_reads ) {
     single_reads_ch = Channel.fromFilePairs( params.se_reads, size: 1, checkIfExists: true ).map {it -> it + ['single']}
+} else {
+    single_reads_ch = Channel.empty()
 }
 
 featureProt_ch = Channel.fromPath( workflow.projectDir + '/assets/featureProt/*.faa', checkIfExists: true )
