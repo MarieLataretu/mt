@@ -1,4 +1,4 @@
-process featureProt_filtered{
+process filter_featureProt{
     label 'python'
 
     input:

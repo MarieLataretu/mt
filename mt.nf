@@ -33,6 +33,7 @@ include { spades_input; spades } from './modules/spades'
 include { kmergenie_input; kmergenie; soapdenovo2_input; soapdenovo2 } from './modules/soapdenovo2'
 include { cap3 } from './modules/cap3'
 include { hisat2index; hisat2; index_bam } from './modules/hisat2'
+include { filter_featureProt } from './modules/filter_featureProt'
 include { make_blast_db; blast } from './modules/blast'
 include { make_diamond_db ; diamond } from './modules/diamond'
 include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pident_filter; pident_filter as diamond_pident_filter; get_features as get_blast_features; get_features as get_diamond_features; collect_features; result_table } from './modules/features'
@@ -98,7 +99,7 @@ workflow {
 
     // filter feature proteins (exclude genus)
     if ( params.genus ){
-        filter_featureProt(featureProt_ch)
+        filter_featureProt(featureProt_ch, params.genus)
         featureProt_filtered = filter_featureProt.out
     } else {
         featureProt_filtered = featureProt_ch
