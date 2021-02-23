@@ -38,9 +38,6 @@ include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pid
 include { quast } from './modules/quast'
 include { multiqc } from './modules/multiqc'
 
-if ( params.genus ) {
-    genus_ch = Channel.value( params.genus )
-}
 if ( params.pe_reads ) {
     paired_reads_ch = Channel.fromFilePairs( params.pe_reads, size: 2, checkIfExists: true ).map {it -> it + ['paired']}
 }
@@ -94,11 +91,21 @@ workflow {
 
     assemblies_scaffolds = assemblies.concat(cap3.out)
 
+    // filter feature proteins (exclude genus)
+    if ( params.genus ){
+        filter_featureProt(featureProt_ch)
+        featureProt_filtered = filter_featureProt.out
+    } else {
+        featureProt_filtered = featureProt_ch
+    }
+
+    featureProt_filtered.view()
+
     // blast
     make_blast_db(assemblies_scaffolds)
-    blast(featureProt_ch.collect(), make_blast_db.out, params.genetic_code)
+    blast(featureProt_filtered.collect(), make_blast_db.out, params.genetic_code)
     // diamond
-    make_diamond_db(featureProt_ch)
+    make_diamond_db(featureProt_filtered)
     diamond(make_diamond_db.out, assemblies_scaffolds.collect(), params.genetic_code)
 
     // map reads back to assembly
