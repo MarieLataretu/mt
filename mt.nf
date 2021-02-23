@@ -104,8 +104,6 @@ workflow {
         featureProt_filtered = featureProt_ch
     }
 
-    featureProt_filtered.view()
-
     // blast
     make_blast_db(assemblies_scaffolds)
     blast(featureProt_filtered.collect(), make_blast_db.out, params.genetic_code)
