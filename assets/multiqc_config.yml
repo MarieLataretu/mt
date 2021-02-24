@@ -28,10 +28,9 @@ report_section_order:
     hisat2:
         order: 40
     kmergenie:
-        order: 50
+        after: 'hisat2'
     QUAST:
         order: 60
-        befor: kmergenie
     mt_stats:
         order: 10000
 
