@@ -21,13 +21,12 @@ process kmergenie {
 
     output:
     env(best_kmer), emit: best_kmer
-    path('histograms_report_mqc.html'), emit: report
+    path('histograms_report.html'), emit: report
 
     script:
     """
     kmergenie ${input} -t ${task.cpus} > kmergenie.log
     best_kmer=\$(grep '^best k: ' kmergenie.log | awk '{print \$3}')
-    ln -s histograms_report.html histograms_report_mqc.html
     """
 }
 
