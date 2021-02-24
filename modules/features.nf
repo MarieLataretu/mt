@@ -189,9 +189,6 @@ process collect_features {
 process result_table {
     label 'python'
 
-    if ( params.softlink_results ) { publishDir "${params.output}", pattern: 'result.tsv' }
-    else { publishDir "${params.output}", mode: 'copy', pattern: 'result.tsv' }
-
     input:
     path(assembly_result)
 
@@ -209,6 +206,10 @@ process result_table {
         df = pd.read_csv(assembly_result, sep='\\t')
         results.append(df)
     df = pd.concat(results, axis=0)
+    df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['diamond_cov'].isnull() ) & ( df['#diamond_hits'].isnull() ) )]
+    df.sort_values(by=['norm_read_coverage', 'in_95_quantile_read_coverage', 'length'], ascending=[False, False, False], inplace=True)
+    df_id = df['assembly'].astype(str) + ':' + df['contig'].astype(str)
+    df.insert(0, 'id', df_id)
     df.to_csv('result.tsv', sep='\t', na_rep='NA', index=False)
     """
 }
