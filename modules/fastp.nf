@@ -19,7 +19,7 @@ process fastp {
     }
     else {
     """
-    fastp -i ${reads[0]} -I ${reads[1]} -o ${name}_trimmed_1.fastq.gz -O ${name}_trimmed_2.fastq.gz --thread ${task.cpus} --json ${name}_fastp.json ${params.fastp_additional_params}
+    fastp -i ${reads[0]} -I ${reads[1]} -o ${name}_1_trimmed.fastq.gz -O ${name}_2_trimmed.fastq.gz --thread ${task.cpus} --json ${name}_fastp.json ${params.fastp_additional_params}
     """
     }
 }
