@@ -94,15 +94,33 @@ process get_features {
         #!/usr/bin/env python3
         import pandas as pd
 
+        columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
+
         results = []
+        number_of_hit_dict = {}
         for feature_prot in ${result_list}:
             try:
                 df = pd.read_csv(feature_prot, sep='\\t', header=None)
                 results.append(df)
+
+                # get number of hits for each contig
+                df.columns = columns
+                contig_grouped = df.groupby(by='sseqid')
+                for name, group in contig_grouped:
+                    if name not in number_of_hit_dict:
+                        number_of_hit_dict[name] = {}
+                    number_of_hit_dict[name][feature_prot.split('.')[0]] = len(group.index)
             except pd.errors.EmptyDataError:
                 print(f"No results for {feature_prot}.")
+        
+        for contig in number_of_hit_dict:
+            number_of_hit_dict[contig] = str(number_of_hit_dict[contig]).strip('{').strip('}').replace('\\'', '')
+        df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=['blast_hits'])
+        df_hits.index.name = 'contig'
+        df_hits.index = df_hits.index.map(str)
+        
         df = pd.concat(results, axis=0, ignore_index=True)
-        df.columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
+        df.columns = columns
 
         contig_grouped = df.groupby(by='sseqid')
 
@@ -118,22 +136,42 @@ process get_features {
             dict_contig_cov[str(name)] = [len(dict_contig_cov_raw[name])/group['slen'].iloc[0], len(group)]
 
         df_cov = pd.DataFrame.from_dict(dict_contig_cov, orient='index', columns=['${tool}_cov', '#${tool}_hits'])
-        df_cov.to_csv("${assembly_name}_${tool}-cov.tsv", sep='\\t', index_label='contig')
+        df_cov.index.name = 'contig'
+        df_cov.index = df_cov.index.map(str)
+
+        df_features = df_cov.join(df_hits, on='contig')
+        df_features.to_csv("${assembly_name}_${tool}-cov.tsv", sep='\\t', index_label='contig')
         """
     else if( tool == 'diamond' )
         """
         #!/usr/bin/env python3
         import pandas as pd
 
+        columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
+
         results = []
+        number_of_hit_dict = {}
         for feature_prot in ${result_list}:
             try:
                 df = pd.read_csv(feature_prot, sep='\\t', header=None)
                 results.append(df)
+                # get number of hits for each contig
+                df.columns = columns
+                contig_grouped = df.groupby(by='qseqid')
+                for name, group in contig_grouped:
+                    if name not in number_of_hit_dict:
+                        number_of_hit_dict[name] = {}
+                    number_of_hit_dict[name][feature_prot.split('.')[0].split('_')[1]] = len(group.index)
             except pd.errors.EmptyDataError:
                 print(f"No results for {feature_prot}.")
+        for contig in number_of_hit_dict:
+            number_of_hit_dict[contig] = str(number_of_hit_dict[contig]).strip('{').strip('}').replace('\\'', '')
+        df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=['diamond_hits'])
+        df_hits.index.name = 'contig'
+        df_hits.index = df_hits.index.map(str)
+
         df = pd.concat(results, axis=0, ignore_index=True)
-        df.columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
+        df.columns = columns
 
         contig_grouped = df.groupby(by='qseqid')
 
@@ -149,7 +187,11 @@ process get_features {
             dict_contig_cov[str(name)] = [len(dict_contig_cov_raw[name])/group['qlen'].iloc[0], len(group)]
 
         df_cov = pd.DataFrame.from_dict(dict_contig_cov, orient='index', columns=['${tool}_cov', '#${tool}_hits'])
-        df_cov.to_csv("${assembly_name}_${tool}-cov.tsv", sep='\\t', index_label='contig')
+        df_cov.index.name = 'contig'
+        df_cov.index = df_cov.index.map(str)
+
+        df_features = df_cov.join(df_hits, on='contig')
+        df_features.to_csv("${assembly_name}_${tool}-cov.tsv", sep='\\t', index_label='contig')
         """
     else
         error "Unknown tool: ${tool}"
