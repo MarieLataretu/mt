@@ -39,6 +39,7 @@ include { make_blast_db; blast } from './modules/blast'
 include { make_diamond_db ; diamond } from './modules/diamond'
 include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pident_filter; pident_filter as diamond_pident_filter; get_features as get_blast_features; get_features as get_diamond_features; collect_features; result_table } from './modules/features'
 include { extract_contigs } from './modules/mt_assembly'
+include { get_mitos_ref; mitos } from './modules/mitos'
 include { quast as quast_complete_assembly; quast as quast_mt_assemblys } from './modules/quast'
 include { format_kmergenie_report; multiqc } from './modules/multiqc'
 
@@ -141,6 +142,10 @@ workflow {
 
     extract_contigs(assemblies_scaffolds.join(collect_features.out.contigs))
 
+    // Annotate
+    get_mitos_ref()
+    mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
+
     // Summary
     // QUAST full assembly
     quast_complete_assembly('full_assembly', assemblies_scaffolds.map{it -> it[1]}.collect(), file( "${params.output}/no_ref_genome" ), file( "${params.output}/no_ref_annotation"))
@@ -151,9 +156,6 @@ workflow {
     format_kmergenie_report(kmergenie.out.report)
     // run MultiQC
     multiqc(multiqc_config, fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), format_kmergenie_report.out, hisat2.out.log.collect(), quast_complete_assembly.out.report_tsv, quast_mt_assemblys.out.report_tsv,  result_table.out)
-    
-    // mit ref: vgl
-    // mitos anno
 }
 
 def helpMSG() {
