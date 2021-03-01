@@ -2,8 +2,8 @@ process multiqc {
     label 'multiqc'
     label 'smallTask'
 
-    if ( params.softlink_results ) { publishDir "${params.output}/${params.multiqc_dir}", pattern: 'multiqc_report.html' }
-    else { publishDir "${params.output}/${params.multiqc_dir}", mode: 'copy', pattern: 'multiqc_report.html' }
+    if ( params.softlink_results ) { publishDir "${params.output}", pattern: 'multiqc_report.html' }
+    else { publishDir "${params.output}", mode: 'copy', pattern: 'multiqc_report.html' }
 
     input:
     path(config)
@@ -12,7 +12,8 @@ process multiqc {
     path(fastqcPost)
     path(kmergenie)
     path(hisat2)
-    path(quast)
+    path(quast_full)
+    path(quast_filtered)
     path(mt_result)
 
     output:

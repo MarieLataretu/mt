@@ -26,6 +26,7 @@ nextflow.enable.dsl=2
 // terminal prints
 if (params.help) { exit 0, helpMSG() }
 if ( ! params.pe_reads && ! params.se_reads ) { exit 1, "Read data is required." }
+if ( params.reference_annotation && ! params.reference_genome ) { exit 1, "If an annotation file is provided, a reference file needs to be there, too." }
 
 include { fastqc as fastqcPre; fastqc as fastqcPost } from './modules/fastqc'
 include { fastp; get_insert_peak_from_fastp; get_mean_read_length_from_fastp } from './modules/fastp'
@@ -37,7 +38,8 @@ include { filter_featureProt } from './modules/filter_featureProt'
 include { make_blast_db; blast } from './modules/blast'
 include { make_diamond_db ; diamond } from './modules/diamond'
 include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pident_filter; pident_filter as diamond_pident_filter; get_features as get_blast_features; get_features as get_diamond_features; collect_features; result_table } from './modules/features'
-include { quast } from './modules/quast'
+include { extract_contigs } from './modules/mt_assembly'
+include { quast as quast_complete_assembly; quast as quast_mt_assemblys } from './modules/quast'
 include { format_kmergenie_report; multiqc } from './modules/multiqc'
 
 if ( params.pe_reads ) {
@@ -50,6 +52,9 @@ if ( params.se_reads ) {
 } else {
     single_reads_ch = Channel.empty()
 }
+
+reference_genome = params.reference_genome ? file( params.reference_genome, checkIfExists: true ) : file( "${params.output}/no_ref_genome" )
+reference_annotation = params.reference_annotation ? file( params.reference_annotation, checkIfExists: true ) : file( "${params.output}/no_ref_annotation" )
 
 featureProt_ch = Channel.fromPath( workflow.projectDir + '/assets/featureProt/*.faa', checkIfExists: true )
 multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
@@ -107,14 +112,14 @@ workflow {
     }
 
     // blast
-    make_blast_db(assemblies_scaffolds)
+    make_blast_db(assemblies_scaffolds.map{it -> it[1]})
     blast(featureProt_filtered.collect(), make_blast_db.out, params.genetic_code)
     // diamond
     make_diamond_db(featureProt_filtered)
-    diamond(make_diamond_db.out, assemblies_scaffolds.collect(), params.genetic_code)
+    diamond(make_diamond_db.out, assemblies_scaffolds.map{it -> it[1]}.collect(), params.genetic_code)
 
     // map reads back to assembly
-    hisat2index(assemblies_scaffolds)
+    hisat2index(assemblies_scaffolds.map{it -> it[1]})
     hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect(), trimmed_paired_reads.map{it -> it[1][1]}.collect(), all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
 
@@ -132,15 +137,20 @@ workflow {
 
     // collect features
     collect_features(get_95th_percentile.out.join(get_blast_features.out.join(get_diamond_features.out)))
-    result_table(collect_features.out.map{ it -> it[1] }.collect())
+    result_table(collect_features.out.table.map{ it -> it[1] }.collect())
 
-    // summary
-    quast(assemblies_scaffolds.collect())
+    extract_contigs(assemblies_scaffolds.join(collect_features.out.contigs))
+
+    // Summary
+    // QUAST full assembly
+    quast_complete_assembly('full_assembly', assemblies_scaffolds.map{it -> it[1]}.collect(), file( "${params.output}/no_ref_genome" ), file( "${params.output}/no_ref_annotation"))
+    // QUAST filtered assembly
+    quast_mt_assemblys('filtered_assembly', extract_contigs.out.map{it -> it[1]}.collect(), reference_genome, reference_annotation)
 
     // format stuff for MultiQC
     format_kmergenie_report(kmergenie.out.report)
     // run MultiQC
-    multiqc(multiqc_config, fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), format_kmergenie_report.out, hisat2.out.log.collect(), quast.out.report_tsv, result_table.out)
+    multiqc(multiqc_config, fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), format_kmergenie_report.out, hisat2.out.log.collect(), quast_complete_assembly.out.report_tsv, quast_mt_assemblys.out.report_tsv,  result_table.out)
     
     // mit ref: vgl
     // mitos anno
