@@ -81,7 +81,7 @@ workflow {
     all_trimmed_single_read_paths = trimmed_single_reads.map{it -> it[1]}.collect()
     all_trimmed_read_paths = all_trimmed_paired_read_paths.concat(all_trimmed_single_read_paths).collect()
     
-    // assemblies
+    // Assemblies
     // SPAdes
     spades_input(all_trimmed_paired_read_paths, all_trimmed_single_read_paths)
     spades(spades_input.out, all_trimmed_read_paths)
@@ -99,10 +99,20 @@ workflow {
 
     assemblies = spades.out.concat(soapdenovo2.out)
 
-    // scaffolding
+    // Scaffolding
     cap3(assemblies)
 
     assemblies_scaffolds = assemblies.concat(cap3.out)
+
+    // map reads back to assembly
+    hisat2index(assemblies_scaffolds.map{it -> it[1]})
+    hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect(), trimmed_paired_reads.map{it -> it[1][1]}.collect(), all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
+    index_bam(hisat2.out.sample_bam)
+
+    // Read coverage
+    get_bed(index_bam.out)
+    get_coverage(get_bed.out.bam, get_bed.out.bed)
+    get_95th_percentile(get_coverage.out)
 
     // filter feature proteins (exclude genus)
     if ( params.genus ){
@@ -118,16 +128,6 @@ workflow {
     // diamond
     make_diamond_db(featureProt_filtered)
     diamond(make_diamond_db.out, assemblies_scaffolds.map{it -> it[1]}.collect(), params.genetic_code)
-
-    // map reads back to assembly
-    hisat2index(assemblies_scaffolds.map{it -> it[1]})
-    hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect(), trimmed_paired_reads.map{it -> it[1][1]}.collect(), all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
-    index_bam(hisat2.out.sample_bam)
-
-    // contig coverage
-    get_bed(index_bam.out)
-    get_coverage(get_bed.out.bam, get_bed.out.bed)
-    get_95th_percentile(get_coverage.out)
 
     // blast features
     blast_pident_filter(blast.out, 70)
