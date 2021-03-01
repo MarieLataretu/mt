@@ -204,7 +204,8 @@ process collect_features {
     tuple val(assembly_name), path(read_coverage), path(blast_features), path(diamond_features)
 
     output:
-    tuple val(assembly_name), path("${assembly_name}.tsv")
+    tuple val(assembly_name), path('contigs.tsv'), emit: contigs
+    tuple val(assembly_name), path("${assembly_name}.tsv"), emit: table
 
     script:
     """
@@ -220,7 +221,9 @@ process collect_features {
     df_diamond.index = df_diamond.index.map(str)
 
     df = df_cov.join(df_blast, on='contig').join(df_diamond, on='contig')
-    df.sort_values(by=['norm_read_coverage', 'in_95_quantile_read_coverage', 'length'], ascending=[False, False, False], inplace=True)
+    df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['diamond_cov'].isnull() ) & ( df['#diamond_hits'].isnull() ) )]
+    
+    df.to_csv("contigs.tsv", sep='\t', columns=[], header=False)
 
     df = pd.concat([df], keys=["${assembly_name}"], names=['assembly'])
 
@@ -230,6 +233,9 @@ process collect_features {
 
 process result_table {
     label 'python'
+
+    if ( params.softlink_results ) { publishDir "${params.output}", pattern: 'result.tsv' }
+    else { publishDir "${params.output}", mode: 'copy', pattern: 'result.tsv' }
 
     input:
     path(assembly_result)
@@ -248,7 +254,6 @@ process result_table {
         df = pd.read_csv(assembly_result, sep='\\t')
         results.append(df)
     df = pd.concat(results, axis=0)
-    df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['diamond_cov'].isnull() ) & ( df['#diamond_hits'].isnull() ) )]
     df.sort_values(by=['norm_read_coverage', 'in_95_quantile_read_coverage', 'length'], ascending=[False, False, False], inplace=True)
     df_id = df['assembly'].astype(str) + ':' + df['contig'].astype(str)
     df.insert(0, 'id', df_id)
