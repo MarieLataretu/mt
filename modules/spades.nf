@@ -34,7 +34,7 @@ process spades {
     path(reads)
 
     output:
-    path('spades/spades.fasta')
+    tuple val('spades'), path('spades/spades.fasta')
 
     script:
     """

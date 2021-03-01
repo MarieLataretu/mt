@@ -2,14 +2,14 @@ process cap3{
     label 'cap3'
 
     input:
-    path(assembly)
+    tuple val(assembly_name), path(assembly)
 
     output:
-    path('*-cap3.fasta')
+    tuple val("${assembly_name}-cap3"), path("${assembly_name}-cap3.fasta")
 
     script:
     """
     cap3 ${assembly} > cap3.log 2> cap3.log
-    cat ${assembly}.cap.contigs ${assembly}.cap.singlets > ${assembly.baseName}-cap3.fasta
+    cat ${assembly}.cap.contigs ${assembly}.cap.singlets > ${assembly_name}-cap3.fasta
     """
 }

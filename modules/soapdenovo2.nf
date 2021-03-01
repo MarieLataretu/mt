@@ -71,7 +71,7 @@ process soapdenovo2 {
     path(reads)
 
     output:
-    path("soapdenovo2k*.fasta")
+    tuple val("soapdenovo2k${kmer}"), path("soapdenovo2k${kmer}.fasta")
 
     script:
     """
