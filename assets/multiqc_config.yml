@@ -1,0 +1,117 @@
+module_order:    
+    - fastqc:
+        name: 'FastQC (trimmed)'
+        anchor: 'fastqc_trimmed'
+        path_filters:
+            - '*trimmed_fastqc.zip'   
+    - fastp:
+        anchor: 'fastp'
+    - fastqc:
+        name: 'FastQC (raw)'
+        anchor: 'fastqc_raw'
+        path_filters_exclude:
+            - '*trimmed_fastqc.zip'
+    - hisat2:
+        anchor: 'hisat2'
+    - quast:
+        name: 'QUAST (full assembly)'
+        anchor: 'quast_full'
+        path_filters:
+            - '*full_assembly_report.tsv'  
+    - custom_data
+    - quast:
+        name: 'QUAST (mt)'
+        anchor: 'quast_mt'
+        path_filters:
+            - '*filtered_assembly_report.tsv'  
+
+report_section_order:
+    fastqc_raw:
+        order: 10
+    fastp:
+        order: 20
+    fastqc_trimmed:
+        order: 30
+    hisat2:
+        order: 40
+    kmergenie:
+        after: 'hisat2'
+    quast_full:
+        order: 60
+    mt_stats:
+        order: 80
+    quast_mt:
+        order: 90
+
+custom_data:
+    mt_stats:
+        plot_type: 'table'
+        section_name: 'mt stats'
+        anchor: 'mt_stats'
+        id: 'mt_stats'
+        pconfig:
+            id: 'mt_stats'
+            namespace: 'mt stats'
+            col1_header: 'ID (Assembly:Contig)'
+        headers:
+            assembly:
+                title: 'Assembly'
+                description: 'Assembly name'
+                hidden: True
+            contig:
+                title: 'Contig'
+                description: 'Contig name'
+                format: '{:,.0f}'
+                scale: False
+                hidden: True
+            length:
+                title: 'Contig length'
+                format: '{:,.0f}'
+            norm_read_coverage:
+                title: 'Norm. read cov.'
+                description: 'Read coverage of the contig normalized by the contig length'
+                format: '{:,.2f}'
+            in_95_quantile_read_coverage:
+                title: '95th quantile read cov.'
+                description: 'Normalized read coverage of the contig is in the 95th qunatile'
+            blast_cov:
+                title: 'Norm. BLAST cov.'
+                description: 'Coverage of BLAST hits on the contig normalized by the contig length'
+                format: '{:,.2f}'
+            '#blast_hits':
+                title: '# BLAST hits'
+                description: 'Number of BLAST hits'
+                format: '{:,.0f}'
+            blast_hits:
+                title: 'BLAST hits'
+            diamond_cov:
+                title: 'Norm. Diamond cov.'
+                description: 'Coverage of Diamond hits on the contig normalized by the contig length'
+                format: '{:,.2f}'
+            '#diamond_hits':
+                title: '# Diamond hits'
+                description: 'Number of Diamond hits'
+                format: '{:,.0f}'
+            diamond_hits:
+                title: 'Diamond hits'
+
+table_columns_placement:
+    mt_stats:
+        id: 0
+        assembly: 10
+        contig: 20
+        length: 30
+        norm_read_coverage: 40
+        in_95_quantile_read_coverage: 50
+        blast_cov: 60
+        '#blast_hits': 70
+        blast_hits: 80
+        diamond_cov: 90
+        '#diamond_hits': 100
+        diamond_hits: 110
+
+sp:
+    mt_stats:
+        fn: 'result.tsv'
+    quast:
+        fn: '*_report.tsv'
