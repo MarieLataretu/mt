@@ -137,7 +137,7 @@ workflow {
     get_diamond_features('diamond', diamond_pident_filter.out.groupTuple())
 
     // collect features
-    collect_features(get_95th_percentile.out.join(get_blast_features.out.join(get_diamond_features.out)))
+    collect_features(get_95th_percentile.out.join(get_blast_features.out.join(get_diamond_features.out)), params.contig_len_filter, params.contig_high_read_cov_filter == 'true' ? 'True' : 'False')
     result_table(collect_features.out.table.map{ it -> it[1] }.collect())
 
     extract_contigs(assemblies_scaffolds.join(collect_features.out.contigs))

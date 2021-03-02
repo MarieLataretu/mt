@@ -202,6 +202,8 @@ process collect_features {
 
     input:
     tuple val(assembly_name), path(read_coverage), path(blast_features), path(diamond_features)
+    val(contig_len_threshold)
+    val(contig_high_read_cov_filter)
 
     output:
     tuple val(assembly_name), path('contigs.tsv'), emit: contigs
@@ -222,7 +224,10 @@ process collect_features {
 
     df = df_cov.join(df_blast, on='contig').join(df_diamond, on='contig')
     df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['diamond_cov'].isnull() ) & ( df['#diamond_hits'].isnull() ) )]
-    
+    if ${contig_high_read_cov_filter}:
+        df = df.loc[df['in_95_quantile_read_coverage']]
+    df = df.loc[df['length'] >= ${contig_len_threshold}]
+        
     df.to_csv("contigs.tsv", sep='\t', columns=[], header=False)
 
     df = pd.concat([df], keys=["${assembly_name}"], names=['assembly'])
