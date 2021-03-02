@@ -33,6 +33,7 @@ process get_coverage {
 
 process get_95th_percentile {
     label 'python'
+    label 'smallTask'
 
     input:
     tuple val(assembly_name), path(read_coverage_tsv)
@@ -56,7 +57,8 @@ process get_95th_percentile {
 
 process pident_filter {
     label 'python'
-    
+    label 'smallTask'
+
     input:
     tuple val(assembly_name), path(homo_result)
     val(threshold)
@@ -79,7 +81,8 @@ process pident_filter {
 
 process get_features {
     label 'python'
-    
+    label 'smallTask'
+
     input:
     val(tool)
     tuple val(assembly_name), path(results)
@@ -199,6 +202,7 @@ process get_features {
 
 process collect_features {
     label 'python'
+    label 'smallTask'
 
     input:
     tuple val(assembly_name), path(read_coverage), path(blast_features), path(diamond_features)
@@ -238,6 +242,7 @@ process collect_features {
 
 process result_table {
     label 'python'
+    label 'smallTask'
 
     if ( params.softlink_results ) { publishDir "${params.output}", pattern: 'result.tsv' }
     else { publishDir "${params.output}", mode: 'copy', pattern: 'result.tsv' }

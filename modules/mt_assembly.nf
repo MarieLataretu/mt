@@ -1,5 +1,6 @@
 process extract_contigs {
     label 'python'
+    label 'smallTask'
 
     input:
     tuple val(assembly_name), path(full_assembly), path(contig_list)

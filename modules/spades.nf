@@ -1,5 +1,6 @@
 process spades_input {
     label 'python'
+    label 'smallTask'
 
     input:
     path(pe_reads)

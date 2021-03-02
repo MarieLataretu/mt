@@ -26,6 +26,7 @@ process fastp {
 
 process get_insert_peak_from_fastp {
     label 'python'
+    label 'smallTask'
     
     input:
     tuple val(name), path(json_report), val(mode)
@@ -45,6 +46,7 @@ process get_insert_peak_from_fastp {
 
 process get_mean_read_length_from_fastp {
     label 'python'
+    label 'smallTask'
 
     input:
     tuple val(name), path(json_report), val(mode)

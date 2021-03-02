@@ -1,4 +1,6 @@
 process kmergenie_input {
+    label 'smallTask'
+    
     input:
     path(reads)
 
@@ -32,6 +34,7 @@ process kmergenie {
 
 process soapdenovo2_input {
     label 'python'
+    label 'smallTask'
 
     input:
     val(pe_reads_and_info)

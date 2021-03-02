@@ -1,4 +1,6 @@
 process get_mitos_ref{
+    label 'smallTask'
+    
     output:
     path('refseq89f')
 

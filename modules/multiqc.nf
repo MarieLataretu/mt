@@ -27,6 +27,8 @@ process multiqc {
 }
 
 process format_kmergenie_report {
+    label 'smallTask'
+    
     input:
     path(kmergenie_report)
 
