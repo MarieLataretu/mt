@@ -114,7 +114,7 @@ process get_features {
                 print(f"No results for {feature_prot}.")
         
         for contig in number_of_hit_dict:
-            number_of_hit_dict[contig] = str(number_of_hit_dict[contig]).strip('{').strip('}').replace('\\'', '')
+            number_of_hit_dict[contig] = ', '.join([f"{hit}: {number_of_hit_dict[contig][hit]}" for hit in sorted(number_of_hit_dict[contig])])
         df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=['blast_hits'])
         df_hits.index.name = 'contig'
         df_hits.index = df_hits.index.map(str)
@@ -165,7 +165,7 @@ process get_features {
             except pd.errors.EmptyDataError:
                 print(f"No results for {feature_prot}.")
         for contig in number_of_hit_dict:
-            number_of_hit_dict[contig] = str(number_of_hit_dict[contig]).strip('{').strip('}').replace('\\'', '')
+            number_of_hit_dict[contig] = ', '.join([f"{hit}: {number_of_hit_dict[contig][hit]}" for hit in sorted(number_of_hit_dict[contig])])
         df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=['diamond_hits'])
         df_hits.index.name = 'contig'
         df_hits.index = df_hits.index.map(str)
