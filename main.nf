@@ -77,10 +77,10 @@ workflow {
     trimmed_paired_reads = fastp.out.sample_trimmed.filter { it[2] == 'paired' }.join(get_insert_peak_from_fastp.out, by: [0,0])
     trimmed_single_reads = fastp.out.sample_trimmed.filter { it[2] == 'single' }
 
-    all_trimmed_paired_read_paths = trimmed_paired_reads.map{it -> it[1]}.collect()
-    all_trimmed_single_read_paths = trimmed_single_reads.map{it -> it[1]}.collect()
-    all_trimmed_read_paths = all_trimmed_paired_read_paths.concat(all_trimmed_single_read_paths).collect()
-    
+    all_trimmed_paired_read_paths = trimmed_paired_reads.map{it -> it[1]}.collect().ifEmpty { file( "${params.output}/EMPTY") }
+    all_trimmed_single_read_paths = trimmed_single_reads.map{it -> it[1]}.collect().ifEmpty { file( "${params.output}/EMPTY") }
+    all_trimmed_read_paths = trimmed_paired_reads.map{it -> it[1]}.collect().concat(trimmed_single_reads.map{it -> it[1]}.collect()).collect()
+
     // Assemblies
     // SPAdes
     spades_input(all_trimmed_paired_read_paths, all_trimmed_single_read_paths)
@@ -94,7 +94,7 @@ workflow {
     mean_read_len = get_mean_two_third_read_length(get_mean_read_length_from_fastp.out.toFloat())
     kmers = mean_read_len.concat(kmergenie.out.best_kmer).collect().map { it.unique() }
     // SOAPdenovo2
-    soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect(), all_trimmed_single_read_paths)
+    soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect().ifEmpty { [file( "${params.output}/EMPTY")] }, all_trimmed_single_read_paths)
     soapdenovo2(kmers, soapdenovo2_input.out, all_trimmed_read_paths)
 
     assemblies = spades.out.concat(soapdenovo2.out)
@@ -106,7 +106,7 @@ workflow {
 
     // map reads back to assembly
     hisat2index(assemblies_scaffolds.map{it -> it[1]})
-    hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect(), trimmed_paired_reads.map{it -> it[1][1]}.collect(), all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
+    hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect().ifEmpty { file( "${params.output}/EMPTY1")}, trimmed_paired_reads.map{it -> it[1][1]}.collect().ifEmpty { file( "${params.output}/EMPTY2")}, all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
 
     // Read coverage

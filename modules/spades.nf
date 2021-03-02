@@ -9,9 +9,9 @@ process spades_input {
     path('spades_input.yml')
 
     script:
-    // make lists of strings for the python script
-    pe_reads_py =  pe_reads.collect{ "\"${it}\"" }
-    se_reads_py = se_reads.collect { "\"${it}\"" }
+    // make lists of strings for the python script, if input is not empty
+    pe_reads_py = pe_reads.baseName == 'EMPTY' ? '[]' : pe_reads.collect{ "\"${it}\"" }
+    se_reads_py = se_reads.baseName == 'EMPTY' ? '[]' : se_reads.collect{ "\"${it}\"" }
     """
     #!/usr/bin/env python3
     import os
