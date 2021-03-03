@@ -17,14 +17,15 @@ nextflow.enable.dsl=2
 
 // Parameters sanity checking
 
-// Set valid_params = ['max_cores', 'cores', 'memory', 'profile', 'help', 'reads', 'genome', 'annotation', 'deg', 'autodownload', 'pathway', 'species', 'include_species', 'strand', 'mode', 'tpm', 'fastp_additional_params', 'hisat2_additional_params', 'featurecounts_additional_params', 'feature_id_type', 'busco_db', 'dammit_uniref90', 'skip_sortmerna', 'assembly', 'output', 'fastp_dir', 'sortmerna_dir', 'hisat2_dir', 'featurecounts_dir', 'tpm_filter_dir', 'annotation_dir', 'deseq2_dir', 'assembly_dir', 'rnaseq_annotation_dir', 'uniref90_dir', 'multiqc_dir', 'nf_runinfo_dir', 'permanentCacheDir', 'condaCacheDir', 'singularityCacheDir', 'softlink_results', 'cloudProcess', 'permanent-cache-dir', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is 'permanent-cache-dir', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
-// def parameter_diff = params.keySet() - valid_params
-// if (parameter_diff.size() != 0){
-//     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
-// }
+Set valid_params = ['max_cores', 'cores', 'memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'condaCacheDir', 'softlink_results', 'conda-cache-dir'] // don't ask me why there is 'conda-cache-dir'
+def parameter_diff = params.keySet() - valid_params
+if (parameter_diff.size() != 0){
+    exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
+}
 
 // terminal prints
 if (params.help) { exit 0, helpMSG() }
+if ( params.profile ) { exit 1, "--profile is WRONG use -profile" }
 if ( ! params.pe_reads && ! params.se_reads ) { exit 1, "Read data is required." }
 if ( params.reference_annotation && ! params.reference_genome ) { exit 1, "If an annotation file is provided, a reference file needs to be there, too." }
 
