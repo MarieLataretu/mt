@@ -39,7 +39,7 @@ include { make_blast_db; blast } from './modules/blast'
 include { make_diamond_db ; diamond } from './modules/diamond'
 include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pident_filter; pident_filter as diamond_pident_filter; get_features as get_blast_features; get_features as get_diamond_features; collect_features; result_table } from './modules/features'
 include { extract_contigs } from './modules/mt_assembly'
-include { get_mitos_ref; mitos } from './modules/mitos'
+include { get_mitos_ref; mitos as mitos; mitos as mitos_ref } from './modules/mitos'
 include { quast as quast_complete_assembly; quast as quast_mt_assemblys } from './modules/quast'
 include { format_kmergenie_report; multiqc } from './modules/multiqc'
 
@@ -54,8 +54,8 @@ if ( params.se_reads ) {
     single_reads_ch = Channel.empty()
 }
 
-reference_genome = params.reference_genome ? file( params.reference_genome, checkIfExists: true ) : file( "${params.output}/no_ref_genome" )
-reference_annotation = params.reference_annotation ? file( params.reference_annotation, checkIfExists: true ) : file( "${params.output}/no_ref_annotation" )
+reference_genome = params.reference_genome ? Channel.fromPath( params.reference_genome, checkIfExists: true ) : file( "${params.output}/no_ref_genome" )
+reference_annotation = params.reference_annotation ? Channel.fromPath( params.reference_annotation, checkIfExists: true ) : file( "${params.output}/no_ref_annotation" )
 
 featureProt_ch = Channel.fromPath( workflow.projectDir + '/assets/featureProt/*.faa', checkIfExists: true )
 multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
@@ -145,6 +145,9 @@ workflow {
     // Annotate
     get_mitos_ref()
     mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
+    if ( params.reference_genome ) {
+        mitos_ref(reference_genome.map{ it -> [it.baseName, it] }, get_mitos_ref.out, params.genetic_code)
+    }
 
     // Summary
     // QUAST full assembly
