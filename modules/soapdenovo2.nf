@@ -1,4 +1,6 @@
 process kmergenie_input {
+    label 'smallTask'
+    
     input:
     path(reads)
 
@@ -32,6 +34,7 @@ process kmergenie {
 
 process soapdenovo2_input {
     label 'python'
+    label 'smallTask'
 
     input:
     val(pe_reads_and_info)
@@ -42,8 +45,8 @@ process soapdenovo2_input {
 
     script:
     // make lists of strings for the python script
-    pe_reads_and_info_py =  pe_reads_and_info.collect{ "\"${it}\"" }
-    se_reads_py = se_reads.collect { "\"${it}\"" }
+    pe_reads_and_info_py = pe_reads_and_info[0].baseName == 'EMPTY' ? '[]' : pe_reads_and_info.collect{ "\"${it}\"" }
+    se_reads_py = se_reads.baseName == 'EMPTY' ? '[]' : se_reads.collect { "\"${it}\"" }
     """
     #!/usr/bin/env python3
 

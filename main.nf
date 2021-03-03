@@ -17,14 +17,15 @@ nextflow.enable.dsl=2
 
 // Parameters sanity checking
 
-// Set valid_params = ['max_cores', 'cores', 'memory', 'profile', 'help', 'reads', 'genome', 'annotation', 'deg', 'autodownload', 'pathway', 'species', 'include_species', 'strand', 'mode', 'tpm', 'fastp_additional_params', 'hisat2_additional_params', 'featurecounts_additional_params', 'feature_id_type', 'busco_db', 'dammit_uniref90', 'skip_sortmerna', 'assembly', 'output', 'fastp_dir', 'sortmerna_dir', 'hisat2_dir', 'featurecounts_dir', 'tpm_filter_dir', 'annotation_dir', 'deseq2_dir', 'assembly_dir', 'rnaseq_annotation_dir', 'uniref90_dir', 'multiqc_dir', 'nf_runinfo_dir', 'permanentCacheDir', 'condaCacheDir', 'singularityCacheDir', 'softlink_results', 'cloudProcess', 'permanent-cache-dir', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'] // don't ask me why there is 'permanent-cache-dir', 'conda-cache-dir', 'singularity-cache-dir', 'cloud-process'
-// def parameter_diff = params.keySet() - valid_params
-// if (parameter_diff.size() != 0){
-//     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
-// }
+Set valid_params = ['max_cores', 'cores', 'memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'condaCacheDir', 'softlink_results', 'conda-cache-dir'] // don't ask me why there is 'conda-cache-dir'
+def parameter_diff = params.keySet() - valid_params
+if (parameter_diff.size() != 0){
+    exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
+}
 
 // terminal prints
 if (params.help) { exit 0, helpMSG() }
+if ( params.profile ) { exit 1, "--profile is WRONG use -profile" }
 if ( ! params.pe_reads && ! params.se_reads ) { exit 1, "Read data is required." }
 if ( params.reference_annotation && ! params.reference_genome ) { exit 1, "If an annotation file is provided, a reference file needs to be there, too." }
 
@@ -39,7 +40,7 @@ include { make_blast_db; blast } from './modules/blast'
 include { make_diamond_db ; diamond } from './modules/diamond'
 include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pident_filter; pident_filter as diamond_pident_filter; get_features as get_blast_features; get_features as get_diamond_features; collect_features; result_table } from './modules/features'
 include { extract_contigs } from './modules/mt_assembly'
-include { get_mitos_ref; mitos } from './modules/mitos'
+include { get_mitos_ref; mitos as mitos; mitos as mitos_ref } from './modules/mitos'
 include { quast as quast_complete_assembly; quast as quast_mt_assemblys } from './modules/quast'
 include { format_kmergenie_report; multiqc } from './modules/multiqc'
 
@@ -54,8 +55,8 @@ if ( params.se_reads ) {
     single_reads_ch = Channel.empty()
 }
 
-reference_genome = params.reference_genome ? file( params.reference_genome, checkIfExists: true ) : file( "${params.output}/no_ref_genome" )
-reference_annotation = params.reference_annotation ? file( params.reference_annotation, checkIfExists: true ) : file( "${params.output}/no_ref_annotation" )
+reference_genome = params.reference_genome ? Channel.fromPath( params.reference_genome, checkIfExists: true ) : file( "${params.output}/no_ref_genome" )
+reference_annotation = params.reference_annotation ? Channel.fromPath( params.reference_annotation, checkIfExists: true ) : file( "${params.output}/no_ref_annotation" )
 
 featureProt_ch = Channel.fromPath( workflow.projectDir + '/assets/featureProt/*.faa', checkIfExists: true )
 multiqc_config = Channel.fromPath( workflow.projectDir + '/assets/multiqc_config.yml', checkIfExists: true )
@@ -77,10 +78,10 @@ workflow {
     trimmed_paired_reads = fastp.out.sample_trimmed.filter { it[2] == 'paired' }.join(get_insert_peak_from_fastp.out, by: [0,0])
     trimmed_single_reads = fastp.out.sample_trimmed.filter { it[2] == 'single' }
 
-    all_trimmed_paired_read_paths = trimmed_paired_reads.map{it -> it[1]}.collect()
-    all_trimmed_single_read_paths = trimmed_single_reads.map{it -> it[1]}.collect()
-    all_trimmed_read_paths = all_trimmed_paired_read_paths.concat(all_trimmed_single_read_paths).collect()
-    
+    all_trimmed_paired_read_paths = trimmed_paired_reads.map{it -> it[1]}.collect().ifEmpty { file( "${params.output}/EMPTY") }
+    all_trimmed_single_read_paths = trimmed_single_reads.map{it -> it[1]}.collect().ifEmpty { file( "${params.output}/EMPTY") }
+    all_trimmed_read_paths = trimmed_paired_reads.map{it -> it[1]}.collect().concat(trimmed_single_reads.map{it -> it[1]}.collect()).collect()
+
     // Assemblies
     // SPAdes
     spades_input(all_trimmed_paired_read_paths, all_trimmed_single_read_paths)
@@ -94,7 +95,7 @@ workflow {
     mean_read_len = get_mean_two_third_read_length(get_mean_read_length_from_fastp.out.toFloat())
     kmers = mean_read_len.concat(kmergenie.out.best_kmer).collect().map { it.unique() }
     // SOAPdenovo2
-    soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect(), all_trimmed_single_read_paths)
+    soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect().ifEmpty { [file( "${params.output}/EMPTY")] }, all_trimmed_single_read_paths)
     soapdenovo2(kmers, soapdenovo2_input.out, all_trimmed_read_paths)
 
     assemblies = spades.out.concat(soapdenovo2.out)
@@ -106,7 +107,7 @@ workflow {
 
     // map reads back to assembly
     hisat2index(assemblies_scaffolds.map{it -> it[1]})
-    hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect(), trimmed_paired_reads.map{it -> it[1][1]}.collect(), all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
+    hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect().ifEmpty { file( "${params.output}/EMPTY1")}, trimmed_paired_reads.map{it -> it[1][1]}.collect().ifEmpty { file( "${params.output}/EMPTY2")}, all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
 
     // Read coverage
@@ -145,6 +146,9 @@ workflow {
     // Annotate
     get_mitos_ref()
     mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
+    if ( params.reference_genome ) {
+        mitos_ref(reference_genome.map{ it -> [it.baseName, it] }, get_mitos_ref.out, params.genetic_code)
+    }
 
     // Summary
     // QUAST full assembly

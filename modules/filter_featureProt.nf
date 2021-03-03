@@ -1,5 +1,6 @@
 process filter_featureProt{
     label 'python'
+    label 'smallTask'
 
     input:
     path(featureProt)

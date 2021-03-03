@@ -38,9 +38,9 @@ process hisat2 {
     path("${reference.baseName}_summary.log"), emit: log
 
     script:
-    PE1 = "${pe1_reads}".size() > 1 ? '-1 ' + pe1_reads.join(',') : ''
-    PE2 = "${pe2_reads}".size() > 1 ? '-2 ' + pe2_reads.join(',') : ''
-    SE = "${se_reads}".size() > 1 ? '-U ' + se_reads.join(',') : ''
+    PE1 = pe1_reads.baseName == 'EMPTY1' ? '' : '-1 ' + pe1_reads.join(',')
+    PE2 = pe2_reads.baseName == 'EMPTY2' ? '' : '-2 ' + pe2_reads.join(',')
+    SE = se_reads.baseName == 'EMPTY' ? '' : '-U ' + se_reads.join(',')
     """
     hisat2 -x ${reference.baseName} ${PE1} ${PE2} ${SE} -p ${task.cpus} --new-summary --summary-file ${reference.baseName}_summary.log ${additionalParams} | samtools view -bS | samtools sort -o ${reference.baseName}.sorted.bam -T tmp --threads ${task.cpus}
     """
