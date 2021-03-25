@@ -37,9 +37,8 @@ include { cap3 } from './modules/cap3'
 include { hisat2index; hisat2; index_bam } from './modules/hisat2'
 include { filter_featureProt } from './modules/filter_featureProt'
 include { make_blast_db; blast } from './modules/blast'
-include { make_diamond_db ; diamond } from './modules/diamond'
 include { mmseqs2_create_target_db_index ; mmseqs2_search } from './modules/mmseqs2'
-include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pident_filter; pident_filter as diamond_pident_filter; pident_filter as mmseqs2_pident_filter ; get_features as get_blast_features; get_features as get_diamond_features; get_features as get_mmseqs2_features; collect_features; result_table } from './modules/features'
+include { get_bed; get_coverage; get_95th_percentile; pident_filter as blast_pident_filter; pident_filter as mmseqs2_pident_filter ; get_features as get_blast_features; get_features as get_mmseqs2_features; collect_features; result_table } from './modules/features'
 include { extract_contigs } from './modules/mt_assembly'
 include { get_mitos_ref; mitos as mitos; mitos as mitos_ref } from './modules/mitos'
 include { quast as quast_complete_assembly; quast as quast_mt_assemblys } from './modules/quast'
@@ -127,9 +126,6 @@ workflow {
     // blast
     make_blast_db(assemblies_scaffolds.map{it -> it[1]})
     blast(featureProt_filtered.collect(), make_blast_db.out, params.genetic_code)
-    // diamond
-    make_diamond_db(featureProt_filtered)
-    diamond(make_diamond_db.out, assemblies_scaffolds.map{it -> it[1]}.collect(), params.genetic_code)
     // mmseqs2
     mmseqs2_create_target_db_index(assemblies_scaffolds.map{it -> it[1]})
     mmseqs2_search(featureProt_filtered.collect(), mmseqs2_create_target_db_index.out, params.genetic_code)
@@ -137,15 +133,13 @@ workflow {
     // blast features
     blast_pident_filter(blast.out, 70)
     get_blast_features('blast', blast_pident_filter.out.groupTuple())
-    // diamond features
-    diamond_pident_filter(diamond.out, 70)
-    get_diamond_features('diamond', diamond_pident_filter.out.groupTuple())
+
     // mmseqs2 features
     mmseqs2_pident_filter(mmseqs2_search.out, 70)
     get_mmseqs2_features('mmseqs2', blast_pident_filter.out.groupTuple())
 
     // collect features
-    collect_features(get_95th_percentile.out.join(get_blast_features.out.join(get_diamond_features.out).join(get_mmseqs2_features.out)), params.contig_len_filter, params.contig_high_read_cov_filter == 'true' ? 'True' : 'False')
+    collect_features(get_95th_percentile.out.join(get_blast_features.out.join(get_mmseqs2_features.out)), params.contig_len_filter, params.contig_high_read_cov_filter == 'true' ? 'True' : 'False')
     result_table(collect_features.out.table.map{ it -> it[1] }.collect())
 
     extract_contigs(assemblies_scaffolds.join(collect_features.out.contigs))
