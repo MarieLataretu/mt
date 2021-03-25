@@ -94,6 +94,16 @@ custom_data:
                 format: '{:,.0f}'
             diamond_hits:
                 title: 'Diamond hits'
+            mmseqs2_cov:
+                title: 'Norm. MMseqs2 cov.'
+                description: 'Coverage of MMseqs2 hits on the contig normalized by the contig length'
+                format: '{:,.2f}'
+            '#mmseqs2_hits':
+                title: '# MMseqs2 hits'
+                description: 'Number of MMseqs2 hits'
+                format: '{:,.0f}'
+            mmseqs2_hits:
+                title: 'MMseqs2 hits'
 
 table_columns_placement:
     mt_stats:
@@ -109,6 +119,9 @@ table_columns_placement:
         diamond_cov: 90
         '#diamond_hits': 100
         diamond_hits: 110
+        mmseqs2_cov: 120
+        '#mmseqs2_hits': 130
+        mmseqs2_hits: 140
 
 sp:
     mt_stats:

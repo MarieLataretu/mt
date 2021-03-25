@@ -92,7 +92,7 @@ process get_features {
 
     script:
     result_list =  results.collect{ "\"${it}\"" }
-    if ( tool == 'blast')
+    if ( tool == 'blast' || tool == 'mmseqs2')
         """
         #!/usr/bin/env python3
         import pandas as pd
@@ -118,7 +118,7 @@ process get_features {
         
         for contig in number_of_hit_dict:
             number_of_hit_dict[contig] = ', '.join([f"{hit}: {number_of_hit_dict[contig][hit]}" for hit in sorted(number_of_hit_dict[contig])])
-        df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=['blast_hits'])
+        df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=["${tool}_hits"])
         df_hits.index.name = 'contig'
         df_hits.index = df_hits.index.map(str)
         
@@ -205,7 +205,7 @@ process collect_features {
     label 'smallTask'
 
     input:
-    tuple val(assembly_name), path(read_coverage), path(blast_features), path(diamond_features)
+    tuple val(assembly_name), path(read_coverage), path(blast_features), path(diamond_features), path(mmseqs2_features)
     val(contig_len_threshold)
     val(contig_high_read_cov_filter)
 
@@ -221,13 +221,15 @@ process collect_features {
     df_cov = pd.read_csv("${read_coverage}", sep='\\t', index_col='contig')
     df_blast = pd.read_csv("${blast_features}", sep='\\t', index_col='contig')
     df_diamond = pd.read_csv("${diamond_features}", sep='\\t', index_col='contig')
+    df_mmseqs2 = pd.read_csv("${mmseqs2_features}", sep='\\t', index_col='contig')
 
     df_cov.index = df_cov.index.map(str)
     df_blast.index = df_blast.index.map(str)
     df_diamond.index = df_diamond.index.map(str)
+    df_mmseqs2.index = df_mmseqs2.index.map(str)
 
-    df = df_cov.join(df_blast, on='contig').join(df_diamond, on='contig')
-    df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['diamond_cov'].isnull() ) & ( df['#diamond_hits'].isnull() ) )]
+    df = df_cov.join(df_blast, on='contig').join(df_diamond, on='contig').join(df_mmseqs2, on='contig')
+    df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['diamond_cov'].isnull() ) & ( df['#diamond_hits'].isnull() ) & ( df['mmseqs2_cov'].isnull() ) & ( df['#mmseqs2_hits'].isnull() ) )]
     if ${contig_high_read_cov_filter}:
         df = df.loc[df['in_95_quantile_read_coverage']]
     df = df.loc[df['length'] >= ${contig_len_threshold}]
