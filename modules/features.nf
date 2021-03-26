@@ -151,7 +151,7 @@ process collect_features {
     label 'smallTask'
 
     input:
-    tuple val(assembly_name), path(read_coverage), path(blast_features), path(mmseqs2_features)
+    tuple val(assembly_name), path(read_coverage), path(mmseqs2_features), path(blast_features)
     val(contig_len_threshold)
     val(contig_high_read_cov_filter)
 
@@ -165,15 +165,19 @@ process collect_features {
     import pandas as pd
 
     df_cov = pd.read_csv("${read_coverage}", sep='\\t', index_col='contig')
-    df_blast = pd.read_csv("${blast_features}", sep='\\t', index_col='contig')
-    df_mmseqs2 = pd.read_csv("${mmseqs2_features}", sep='\\t', index_col='contig')
-
     df_cov.index = df_cov.index.map(str)
-    df_blast.index = df_blast.index.map(str)
+    df_mmseqs2 = pd.read_csv("${mmseqs2_features}", sep='\\t', index_col='contig')
     df_mmseqs2.index = df_mmseqs2.index.map(str)
 
-    df = df_cov.join(df_blast, on='contig').join(df_mmseqs2, on='contig')
-    df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['mmseqs2_cov'].isnull() ) & ( df['#mmseqs2_hits'].isnull() ) )]
+    if "${blast_features}" != 'no_blast' :
+        df_blast = pd.read_csv("${blast_features}", sep='\\t', index_col='contig')
+        df_blast.index = df_blast.index.map(str)
+        df = df_cov.join(df_blast, on='contig').join(df_mmseqs2, on='contig')
+        df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['mmseqs2_cov'].isnull() ) & ( df['#mmseqs2_hits'].isnull() ) )]
+    else:
+        df = df_cov.join(df_mmseqs2, on='contig')
+        df = df[ ~ (( df['mmseqs2_cov'].isnull() ) & ( df['#mmseqs2_hits'].isnull() ) )]
+
     if ${contig_high_read_cov_filter}:
         df = df.loc[df['in_95_quantile_read_coverage']]
     df = df.loc[df['length'] >= ${contig_len_threshold}]

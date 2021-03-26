@@ -17,7 +17,7 @@ nextflow.enable.dsl=2
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'condaCacheDir', 'softlink_results', 'conda-cache-dir'] // don't ask me why there is 'conda-cache-dir'
+Set valid_params = ['max_cores', 'cores', 'memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast'] // don't ask me why there is 'conda-cache-dir'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -110,7 +110,7 @@ workflow {
     hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect().ifEmpty { file( "${params.output}/EMPTY1")}, trimmed_paired_reads.map{it -> it[1][1]}.collect().ifEmpty { file( "${params.output}/EMPTY2")}, all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
 
-    // Read coverage
+    // read coverage
     get_bed(index_bam.out)
     get_coverage(get_bed.out.bam, get_bed.out.bed)
     get_95th_percentile(get_coverage.out)
@@ -124,34 +124,44 @@ workflow {
     }
 
     // blast
-    make_blast_db(assemblies_scaffolds.map{it -> it[1]})
-    blast(featureProt_filtered.collect(), make_blast_db.out, params.genetic_code)
+    if ( ! params.skip_blast ) {
+        make_blast_db(assemblies_scaffolds.map{it -> it[1]})
+        blast(featureProt_filtered.collect(), make_blast_db.out, params.genetic_code)
+    }
     // mmseqs2
     mmseqs2_create_target_db_index(assemblies_scaffolds.map{it -> it[1]})
     mmseqs2_search(featureProt_filtered.collect(), mmseqs2_create_target_db_index.out, params.genetic_code)
 
     // blast features
-    blast_pident_filter(blast.out, 70)
-    get_blast_features('blast', blast_pident_filter.out.groupTuple())
+    if ( ! params.skip_blast ) {
+        blast_pident_filter(blast.out, 70)
+        get_blast_features('blast', blast_pident_filter.out.groupTuple())
+    } else{
+        get_blast_features = Channel.fromPath( file ("${params.output}/no_blast"))
+    }
 
     // mmseqs2 features
     mmseqs2_pident_filter(mmseqs2_search.out, 70)
-    get_mmseqs2_features('mmseqs2', blast_pident_filter.out.groupTuple())
+    get_mmseqs2_features('mmseqs2', mmseqs2_pident_filter.out.groupTuple())
 
     // collect features
-    collect_features(get_95th_percentile.out.join(get_blast_features.out.join(get_mmseqs2_features.out)), params.contig_len_filter, params.contig_high_read_cov_filter == 'true' ? 'True' : 'False')
+    if ( ! params.skip_blast ) {
+        collect_features(get_95th_percentile.out.join(get_mmseqs2_features.out.join(get_blast_features.out)), params.contig_len_filter, params.contig_high_read_cov_filter == 'true' ? 'True' : 'False')
+    } else {
+        collect_features(get_95th_percentile.out.join(get_mmseqs2_features.out).combine(get_blast_features), params.contig_len_filter, params.contig_high_read_cov_filter == 'true' ? 'True' : 'False')
+    }
     result_table(collect_features.out.table.map{ it -> it[1] }.collect())
 
     extract_contigs(assemblies_scaffolds.join(collect_features.out.contigs))
 
-    // Annotate
+    // annotate
     get_mitos_ref()
     mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
     if ( params.reference_genome ) {
         mitos_ref(reference_genome.map{ it -> [it.baseName, it] }, get_mitos_ref.out, params.genetic_code)
     }
 
-    // Summary
+    // summary
     // QUAST full assembly
     quast_complete_assembly('full_assembly', assemblies_scaffolds.map{it -> it[1]}.collect(), file( "${params.output}/no_ref_genome" ), file( "${params.output}/no_ref_annotation"))
     // QUAST filtered assembly
