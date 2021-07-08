@@ -15,7 +15,7 @@ process mitos{
     label 'mitos'
 
     input:
-    tuple val(assembly_name), path(assembly)
+    tuple val(assembly_name), val(sequences)
     path(mitos_ref_dir)
     val(genetic_code)
 
@@ -24,11 +24,9 @@ process mitos{
 
     script:
     """
+    echo "${sequences}" > ${assembly_name}_single.fa # for long sequences can break
     mkdir ${assembly_name}
-    runmitos.py -c ${genetic_code} --refdir . --refseqver ${mitos_ref_dir} -i ${assembly} -o ${assembly_name}
-    for RES in `ls soapdenovo2k17-cap3`; do
-        contig=\$(head -n 1 soapdenovo2k17-cap3/\$RES/sequence.fas-0 | awk '{sub(">", "", \$1); print \$1}')
-        mv soapdenovo2k17-cap3/\$RES soapdenovo2k17-cap3/\$contig
-    done
+    runmitos.py -c ${genetic_code} --refdir . --refseqver ${mitos_ref_dir} -i ${assembly_name}_single.fa -o ${assembly_name}
+    rm ${assembly_name}_single.fa
     """
 }

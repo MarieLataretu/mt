@@ -1,18 +1,5 @@
 #!/usr/bin/env nextflow
 
-XX = "20"
-YY = "07"
-ZZ = "1"
-
-if ( nextflow.version.toString().tokenize('.')[0].toInteger() < XX.toInteger() ) {
-println "\033[0;33mRNAflow requires at least Nextflow version " + XX + "." + YY + "." + ZZ + " -- You are using version $nextflow.version\u001B[0m"
-exit 1
-}
-else if ( nextflow.version.toString().tokenize('.')[1].toInteger() < YY.toInteger() ) {
-println "\033[0;33mRNAflow requires at least Nextflow version " + XX + "." + YY + "." + ZZ + " -- You are using version $nextflow.version\u001B[0m"
-exit 1
-}
-
 nextflow.enable.dsl=2
 
 // Parameters sanity checking
@@ -154,9 +141,13 @@ workflow {
 
     extract_contigs(assemblies_scaffolds.join(collect_features.out.contigs))
 
+
+    split_fasta_ch = extract_contigs.out.map{it -> it[0]}.combine(extract_contigs.out.map{it -> it[1]}.splitFasta(by: 1))
+    // split_fasta_ch.view()
     // annotate
     get_mitos_ref()
-    mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
+    mitos(split_fasta_ch, get_mitos_ref.out, params.genetic_code)
+    // mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
     if ( params.reference_genome ) {
         mitos_ref(reference_genome.map{ it -> [it.baseName, it] }, get_mitos_ref.out, params.genetic_code)
     }
