@@ -84,16 +84,16 @@ custom_data:
                 format: '{:,.0f}'
             blast_hits:
                 title: 'BLAST hits'
-            diamond_cov:
-                title: 'Norm. Diamond cov.'
-                description: 'Coverage of Diamond hits on the contig normalized by the contig length'
+            mmseqs2_cov:
+                title: 'Norm. MMseqs2 cov.'
+                description: 'Coverage of MMseqs2 hits on the contig normalized by the contig length'
                 format: '{:,.2f}'
-            '#diamond_hits':
-                title: '# Diamond hits'
-                description: 'Number of Diamond hits'
+            '#mmseqs2_hits':
+                title: '# MMseqs2 hits'
+                description: 'Number of MMseqs2 hits'
                 format: '{:,.0f}'
-            diamond_hits:
-                title: 'Diamond hits'
+            mmseqs2_hits:
+                title: 'MMseqs2 hits'
 
 table_columns_placement:
     mt_stats:
@@ -106,9 +106,9 @@ table_columns_placement:
         blast_cov: 60
         '#blast_hits': 70
         blast_hits: 80
-        diamond_cov: 90
-        '#diamond_hits': 100
-        diamond_hits: 110
+        mmseqs2_cov: 90
+        '#mmseqs2_hits': 100
+        mmseqs2_hits: 110
 
 sp:
     mt_stats:

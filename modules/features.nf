@@ -92,112 +92,58 @@ process get_features {
 
     script:
     result_list =  results.collect{ "\"${it}\"" }
-    if ( tool == 'blast')
-        """
-        #!/usr/bin/env python3
-        import pandas as pd
+    """
+    #!/usr/bin/env python3
+    import pandas as pd
 
-        columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
+    columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
 
-        results = []
-        number_of_hit_dict = {}
-        for feature_prot in ${result_list}:
-            try:
-                df = pd.read_csv(feature_prot, sep='\\t', header=None)
-                results.append(df)
+    results = []
+    number_of_hit_dict = {}
+    for feature_prot in ${result_list}:
+        try:
+            df = pd.read_csv(feature_prot, sep='\\t', header=None)
+            results.append(df)
 
-                # get number of hits for each contig
-                df.columns = columns
-                contig_grouped = df.groupby(by='sseqid')
-                for name, group in contig_grouped:
-                    if name not in number_of_hit_dict:
-                        number_of_hit_dict[name] = {}
-                    number_of_hit_dict[name][feature_prot.split('.')[0]] = len(group.index)
-            except pd.errors.EmptyDataError:
-                print(f"No results for {feature_prot}.")
-        
-        for contig in number_of_hit_dict:
-            number_of_hit_dict[contig] = ', '.join([f"{hit}: {number_of_hit_dict[contig][hit]}" for hit in sorted(number_of_hit_dict[contig])])
-        df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=['blast_hits'])
-        df_hits.index.name = 'contig'
-        df_hits.index = df_hits.index.map(str)
-        
-        df = pd.concat(results, axis=0, ignore_index=True)
-        df.columns = columns
+            # get number of hits for each contig
+            df.columns = columns
+            contig_grouped = df.groupby(by='sseqid')
+            for name, group in contig_grouped:
+                if name not in number_of_hit_dict:
+                    number_of_hit_dict[name] = {}
+                number_of_hit_dict[name][feature_prot.split('.')[0]] = len(group.index)
+        except pd.errors.EmptyDataError:
+            print(f"No results for {feature_prot}.")
+    
+    for contig in number_of_hit_dict:
+        number_of_hit_dict[contig] = ', '.join([f"{hit}: {number_of_hit_dict[contig][hit]}" for hit in sorted(number_of_hit_dict[contig])])
+    df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=["${tool}_hits"])
+    df_hits.index.name = 'contig'
+    df_hits.index = df_hits.index.map(str)
+    
+    df = pd.concat(results, axis=0, ignore_index=True)
+    df.columns = columns
 
-        contig_grouped = df.groupby(by='sseqid')
+    contig_grouped = df.groupby(by='sseqid')
 
-        dict_contig_cov_raw = {}
-        dict_contig_cov = {}
-        
-        for name, group in contig_grouped:
-            if name not in dict_contig_cov_raw:
-                dict_contig_cov_raw[name] = set()
-            for i, start in group['sstart'].iteritems():
-                dict_contig_cov_raw[name] = dict_contig_cov_raw[name].union(set(range(min(int(start), int(group.at[i, 'send'])), max(int(start), int(group.at[i, 'send']))+1)))
+    dict_contig_cov_raw = {}
+    dict_contig_cov = {}
+    
+    for name, group in contig_grouped:
+        if name not in dict_contig_cov_raw:
+            dict_contig_cov_raw[name] = set()
+        for i, start in group['sstart'].iteritems():
+            dict_contig_cov_raw[name] = dict_contig_cov_raw[name].union(set(range(min(int(start), int(group.at[i, 'send'])), max(int(start), int(group.at[i, 'send']))+1)))
 
-            dict_contig_cov[str(name)] = [len(dict_contig_cov_raw[name])/group['slen'].iloc[0], len(group)]
+        dict_contig_cov[str(name)] = [len(dict_contig_cov_raw[name])/group['slen'].iloc[0], len(group)]
 
-        df_cov = pd.DataFrame.from_dict(dict_contig_cov, orient='index', columns=['${tool}_cov', '#${tool}_hits'])
-        df_cov.index.name = 'contig'
-        df_cov.index = df_cov.index.map(str)
+    df_cov = pd.DataFrame.from_dict(dict_contig_cov, orient='index', columns=['${tool}_cov', '#${tool}_hits'])
+    df_cov.index.name = 'contig'
+    df_cov.index = df_cov.index.map(str)
 
-        df_features = df_cov.join(df_hits, on='contig')
-        df_features.to_csv("${assembly_name}_${tool}-cov.tsv", sep='\\t', index_label='contig')
-        """
-    else if( tool == 'diamond' )
-        """
-        #!/usr/bin/env python3
-        import pandas as pd
-
-        columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen', 'slen']
-
-        results = []
-        number_of_hit_dict = {}
-        for feature_prot in ${result_list}:
-            try:
-                df = pd.read_csv(feature_prot, sep='\\t', header=None)
-                results.append(df)
-                # get number of hits for each contig
-                df.columns = columns
-                contig_grouped = df.groupby(by='qseqid')
-                for name, group in contig_grouped:
-                    if name not in number_of_hit_dict:
-                        number_of_hit_dict[name] = {}
-                    number_of_hit_dict[name][feature_prot.split('.')[0].split('_')[1]] = len(group.index)
-            except pd.errors.EmptyDataError:
-                print(f"No results for {feature_prot}.")
-        for contig in number_of_hit_dict:
-            number_of_hit_dict[contig] = ', '.join([f"{hit}: {number_of_hit_dict[contig][hit]}" for hit in sorted(number_of_hit_dict[contig])])
-        df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=['diamond_hits'])
-        df_hits.index.name = 'contig'
-        df_hits.index = df_hits.index.map(str)
-
-        df = pd.concat(results, axis=0, ignore_index=True)
-        df.columns = columns
-
-        contig_grouped = df.groupby(by='qseqid')
-
-        dict_contig_cov_raw = {}
-        dict_contig_cov = {}
-        
-        for name, group in contig_grouped:
-            if name not in dict_contig_cov_raw:
-                dict_contig_cov_raw[name] = set()
-            for i, start in group['qstart'].iteritems():
-                dict_contig_cov_raw[name] = dict_contig_cov_raw[name].union(set(range(min(int(start), int(group.at[i, 'qend'])), max(int(start), int(group.at[i, 'qend']))+1)))
-
-            dict_contig_cov[str(name)] = [len(dict_contig_cov_raw[name])/group['qlen'].iloc[0], len(group)]
-
-        df_cov = pd.DataFrame.from_dict(dict_contig_cov, orient='index', columns=['${tool}_cov', '#${tool}_hits'])
-        df_cov.index.name = 'contig'
-        df_cov.index = df_cov.index.map(str)
-
-        df_features = df_cov.join(df_hits, on='contig')
-        df_features.to_csv("${assembly_name}_${tool}-cov.tsv", sep='\\t', index_label='contig')
-        """
-    else
-        error "Unknown tool: ${tool}"
+    df_features = df_cov.join(df_hits, on='contig')
+    df_features.to_csv("${assembly_name}_${tool}-cov.tsv", sep='\\t', index_label='contig')
+    """
 }
 
 process collect_features {
@@ -205,7 +151,7 @@ process collect_features {
     label 'smallTask'
 
     input:
-    tuple val(assembly_name), path(read_coverage), path(blast_features), path(diamond_features)
+    tuple val(assembly_name), path(read_coverage), path(mmseqs2_features), path(blast_features)
     val(contig_len_threshold)
     val(contig_high_read_cov_filter)
 
@@ -219,15 +165,19 @@ process collect_features {
     import pandas as pd
 
     df_cov = pd.read_csv("${read_coverage}", sep='\\t', index_col='contig')
-    df_blast = pd.read_csv("${blast_features}", sep='\\t', index_col='contig')
-    df_diamond = pd.read_csv("${diamond_features}", sep='\\t', index_col='contig')
-
     df_cov.index = df_cov.index.map(str)
-    df_blast.index = df_blast.index.map(str)
-    df_diamond.index = df_diamond.index.map(str)
+    df_mmseqs2 = pd.read_csv("${mmseqs2_features}", sep='\\t', index_col='contig')
+    df_mmseqs2.index = df_mmseqs2.index.map(str)
 
-    df = df_cov.join(df_blast, on='contig').join(df_diamond, on='contig')
-    df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['diamond_cov'].isnull() ) & ( df['#diamond_hits'].isnull() ) )]
+    if "${blast_features}" != 'no_blast' :
+        df_blast = pd.read_csv("${blast_features}", sep='\\t', index_col='contig')
+        df_blast.index = df_blast.index.map(str)
+        df = df_cov.join(df_blast, on='contig').join(df_mmseqs2, on='contig')
+        df = df[ ~ (( df['blast_cov'].isnull() ) & ( df['#blast_hits'].isnull() ) & ( df['mmseqs2_cov'].isnull() ) & ( df['#mmseqs2_hits'].isnull() ) )]
+    else:
+        df = df_cov.join(df_mmseqs2, on='contig')
+        df = df[ ~ (( df['mmseqs2_cov'].isnull() ) & ( df['#mmseqs2_hits'].isnull() ) )]
+
     if ${contig_high_read_cov_filter}:
         df = df.loc[df['in_95_quantile_read_coverage']]
     df = df.loc[df['length'] >= ${contig_len_threshold}]

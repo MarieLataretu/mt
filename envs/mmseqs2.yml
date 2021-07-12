@@ -1,5 +1,5 @@
-name: diamond 
+name: mmseqs2
 channels:
   - bioconda
 dependencies:
-  - diamond=2.0.6
+  - mmseqs2=13.45111
