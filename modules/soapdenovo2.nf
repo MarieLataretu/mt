@@ -17,6 +17,9 @@ process kmergenie_input {
 process kmergenie {
     label 'kmergenie'
 
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.kmergenie_dir}", pattern: "histograms_report.html" }
+    else { publishDir "${params.output}/${params.kmergenie_dir}", mode: 'copy', pattern: "histograms_report.html" }
+
     input:
     path(input)
     path(reads)
@@ -67,6 +70,9 @@ process soapdenovo2_input {
 
 process soapdenovo2 {
     label 'soapdenovo2'
+
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.soapdenovo2_dir}", pattern: "soapdenovo2k*.fasta" }
+    else { publishDir "${params.output}/${params.soapdenovo2_dir}", mode: 'copy', pattern: "soapdenovo2k*.fasta" }
 
     input:
     each kmer

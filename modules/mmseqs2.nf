@@ -17,6 +17,9 @@ process mmseqs2_create_target_db_index {
 
 process mmseqs2_search {
     label 'mmseqs2'
+    
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.mmseqs2_dir}", pattern: "*.mmseqs2" }
+    else { publishDir "${params.output}/${params.mmseqs2_dir}", mode: 'copy', pattern: "*.mmseqs2" }
 
     input:
     each path(query)
