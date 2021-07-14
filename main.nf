@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'fastqc_dir', 'fastp_dir', 'kmergenie_dir', 'soapdenovo2_dir', 'spades_dir', 'quast_dir', 'hisat2_dir', 'mmseqs2_dir', 'blast_dir', 'features_dir', 'mtContigs_dir', 'mt-contigs_dir','mitos_dir', 'multiqc_dir', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast'] // don't ask me why there is 'conda-cache-dir'
+Set valid_params = ['max_cores', 'cores', 'max_memory','memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'fastqc_dir', 'fastp_dir', 'kmergenie_dir', 'soapdenovo2_dir', 'spades_dir', 'quast_dir', 'hisat2_dir', 'mmseqs2_dir', 'blast_dir', 'features_dir', 'mtContigs_dir', 'mt-contigs_dir','mitos_dir', 'multiqc_dir', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast'] // don't ask me why there is 'conda-cache-dir'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -141,10 +141,13 @@ workflow {
 
     extract_contigs(assemblies.join(collect_features.out.contigs))
 
+    // [soapdenovo2k17, /home/go96bix/projects/marie_mt/mt/work/f0/9efd327bebd90aaa3a6a4736232b4a/soapdenovo2k17.filtered.fasta]
+    // [spades, /home/go96bix/projects/marie_mt/mt/work/56/21f758d5b6fc13bdc0e3dd9585a4c1/spades.filtered.fasta]
 
-    split_fasta_ch = extract_contigs.out.map{it -> it[0]}.combine(extract_contigs.out.map{it -> it[1]}.splitFasta(by: 1))
-    // split_fasta_ch.view()
+    split_fasta_ch = extract_contigs.out.map{it -> [it[0], it[1].splitFasta(by: 1)]}.transpose()
+    // [soap123, [actatga, tagag, ....]],[soap2313, [cACACa, ccattag]] --> [soap123, actatga] [soap123, tagag] ...
     // annotate
+    
     get_mitos_ref()
     mitos(split_fasta_ch, get_mitos_ref.out, params.genetic_code)
     // mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)

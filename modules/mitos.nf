@@ -23,14 +23,14 @@ process mitos{
     val(genetic_code)
 
     output:
-    path("${assembly_name}")
+    path("${assembly_name}*")
 
     script:
     """
     echo "${sequences}" > ${assembly_name}_single.fa # for long sequences can break
     contig=\$(head -n 1 ${assembly_name}_single.fa | awk '{ sub(">", "", \$1); print \$1 }')
-    mkdir -p ${assembly_name}/\$contig
-    runmitos.py -c ${genetic_code} --refdir . --refseqver ${mitos_ref_dir} -i ${assembly_name}_single.fa -o ${assembly_name}/\$contig
-    # rm ${assembly_name}_single.fa
+    mkdir -p ${assembly_name}_\$contig
+    runmitos.py -c ${genetic_code} --refdir . --refseqver ${mitos_ref_dir} -i ${assembly_name}_single.fa -o ${assembly_name}_\$contig
+    rm ${assembly_name}_single.fa
     """
 }
