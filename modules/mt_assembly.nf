@@ -2,6 +2,10 @@ process extract_contigs {
     label 'python'
     label 'smallTask'
 
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.mtContigs_dir}", pattern: '*' }
+    else { publishDir "${params.output}/${params.mtContigs_dir}", mode: 'copy', pattern: '*' }
+
+
     input:
     tuple val(assembly_name), path(full_assembly), path(contig_list)
 

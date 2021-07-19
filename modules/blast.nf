@@ -16,6 +16,9 @@ process make_blast_db{
 process blast{
     label 'blast'
 
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.blast_dir}", pattern: "*.blast" }
+    else { publishDir "${params.output}/${params.blast_dir}", mode: 'copy', pattern: "*.blast" }
+
     input:
     each path(featureProt)
     tuple path(assembly), path(assembly_blast_db)

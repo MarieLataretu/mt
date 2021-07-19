@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast'] // don't ask me why there is 'conda-cache-dir'
+Set valid_params = ['max_cores', 'cores', 'max_memory','memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'fastqc_dir', 'fastp_dir', 'kmergenie_dir', 'soapdenovo2_dir', 'spades_dir', 'quast_dir', 'hisat2_dir', 'mmseqs2_dir', 'blast_dir', 'features_dir', 'mtContigs_dir', 'mt-contigs_dir','mitos_dir', 'multiqc_dir', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast'] // don't ask me why there is 'conda-cache-dir'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -88,12 +88,12 @@ workflow {
     assemblies = spades.out.concat(soapdenovo2.out)
 
     // Scaffolding
-    cap3(assemblies)
+    // cap3(assemblies)
 
-    assemblies_scaffolds = assemblies.concat(cap3.out)
+    // assemblies_scaffolds = assemblies.concat(cap3.out)
 
     // map reads back to assembly
-    hisat2index(assemblies_scaffolds.map{it -> it[1]})
+    hisat2index(assemblies.map{it -> it[1]})
     hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect().ifEmpty { file( "${params.output}/EMPTY1")}, trimmed_paired_reads.map{it -> it[1][1]}.collect().ifEmpty { file( "${params.output}/EMPTY2")}, all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
 
@@ -112,11 +112,11 @@ workflow {
 
     // blast
     if ( ! params.skip_blast ) {
-        make_blast_db(assemblies_scaffolds.map{it -> it[1]})
+        make_blast_db(assemblies.map{it -> it[1]})
         blast(featureProt_filtered.collect(), make_blast_db.out, params.genetic_code)
     }
     // mmseqs2
-    mmseqs2_create_target_db_index(assemblies_scaffolds.map{it -> it[1]})
+    mmseqs2_create_target_db_index(assemblies.map{it -> it[1]})
     mmseqs2_search(featureProt_filtered.collect(), mmseqs2_create_target_db_index.out, params.genetic_code)
 
     // blast features
@@ -139,12 +139,15 @@ workflow {
     }
     result_table(collect_features.out.table.map{ it -> it[1] }.collect())
 
-    extract_contigs(assemblies_scaffolds.join(collect_features.out.contigs))
+    extract_contigs(assemblies.join(collect_features.out.contigs))
 
+    // [soapdenovo2k17, /home/go96bix/projects/marie_mt/mt/work/f0/9efd327bebd90aaa3a6a4736232b4a/soapdenovo2k17.filtered.fasta]
+    // [spades, /home/go96bix/projects/marie_mt/mt/work/56/21f758d5b6fc13bdc0e3dd9585a4c1/spades.filtered.fasta]
 
-    split_fasta_ch = extract_contigs.out.map{it -> it[0]}.combine(extract_contigs.out.map{it -> it[1]}.splitFasta(by: 1))
-    // split_fasta_ch.view()
+    split_fasta_ch = extract_contigs.out.map{it -> [it[0], it[1].splitFasta(by: 1)]}.transpose()
+    // [soap123, [actatga, tagag, ....]],[soap2313, [cACACa, ccattag]] --> [soap123, actatga] [soap123, tagag] ...
     // annotate
+    
     get_mitos_ref()
     mitos(split_fasta_ch, get_mitos_ref.out, params.genetic_code)
     // mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
@@ -154,7 +157,7 @@ workflow {
 
     // summary
     // QUAST full assembly
-    quast_complete_assembly('full_assembly', assemblies_scaffolds.map{it -> it[1]}.collect(), file( "${params.output}/no_ref_genome" ), file( "${params.output}/no_ref_annotation"))
+    quast_complete_assembly('full_assembly', assemblies.map{it -> it[1]}.collect(), file( "${params.output}/no_ref_genome" ), file( "${params.output}/no_ref_annotation"))
     // QUAST filtered assembly
     quast_mt_assemblys('filtered_assembly', extract_contigs.out.map{it -> it[1]}.collect(), reference_genome, reference_annotation)
 

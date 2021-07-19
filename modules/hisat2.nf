@@ -23,8 +23,8 @@ process hisat2index {
 process hisat2 {
     label 'hisat2'
     
-    // if ( params.softlink_results ) { publishDir "${params.output}/${params.hisat2_dir}", pattern: "*.sorted.bam" }
-    // else { publishDir "${params.output}/${params.hisat2_dir}", mode: 'copy', pattern: "*.sorted.bam" }
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.hisat2_dir}", pattern: "*.sorted.bam" }
+    else { publishDir "${params.output}/${params.hisat2_dir}", mode: 'copy', pattern: "*.sorted.bam" }
 
     input:
     path(pe1_reads)
@@ -49,8 +49,8 @@ process index_bam {
     label 'hisat2'
     label 'smallTask'    
     
-    // if ( params.softlink_results ) { publishDir "${params.output}/${params.hisat2_dir}", pattern: "*.bai" }
-    // else { publishDir "${params.output}/${params.hisat2_dir}", mode: 'copy', pattern: "*.bai" }
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.hisat2_dir}", pattern: "*.bai" }
+    else { publishDir "${params.output}/${params.hisat2_dir}", mode: 'copy', pattern: "*.bai" }
 
     input:
     tuple val(assembly), path(bam_file)

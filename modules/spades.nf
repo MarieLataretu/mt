@@ -30,6 +30,9 @@ process spades_input {
 process spades {
     label 'spades'
 
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.spades_dir}", pattern: "spades/spades.fasta" }
+    else { publishDir "${params.output}/${params.spades_dir}", mode: 'copy', pattern: "spades/spades.fasta" }
+
     input:
     path(input_yaml)
     path(reads)

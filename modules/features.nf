@@ -194,8 +194,8 @@ process result_table {
     label 'python'
     label 'smallTask'
 
-    if ( params.softlink_results ) { publishDir "${params.output}", pattern: 'result.tsv' }
-    else { publishDir "${params.output}", mode: 'copy', pattern: 'result.tsv' }
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.features_dir}", pattern: 'result.tsv' }
+    else { publishDir "${params.output}/${params.features_dir}", mode: 'copy', pattern: 'result.tsv' }
 
     input:
     path(assembly_result)

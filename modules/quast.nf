@@ -1,8 +1,8 @@
 process quast {
     label 'quast'
 
-    if ( params.softlink_results ) { publishDir "${params.output}", pattern: "quast_*" }
-    else { publishDir "${params.output}", mode: 'copy', pattern: "quast_*" }
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.quast_dir}", pattern: "quast_*" }
+    else { publishDir "${params.output}/${params.quast_dir}", mode: 'copy', pattern: "quast_*" }
 
     input:
     val(name)
