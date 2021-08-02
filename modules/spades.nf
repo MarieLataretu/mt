@@ -42,7 +42,7 @@ process spades {
 
     script:
     """
-    spades.py -o spades -t ${task.cpus} --disable-gzip-output --isolate --dataset ${input_yaml}
+    spades.py -o spades -t ${task.cpus} --disable-gzip-output --isolate --dataset ${input_yaml} --memory ${task.memory}
     # removes spades assembly meta data        
     rm -rf K*
     mv spades/scaffolds.fasta spades/spades.fasta

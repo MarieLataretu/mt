@@ -84,7 +84,7 @@ process soapdenovo2 {
 
     script:
     """
-    SOAPdenovo-127mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
+    SOAPdenovo-63mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
     mv soapdenovo2k${kmer}.contig soapdenovo2k${kmer}'.fasta'
     """
 }
