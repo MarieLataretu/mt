@@ -82,10 +82,12 @@ workflow {
     mean_read_len = get_mean_two_third_read_length(get_mean_read_length_from_fastp.out.toFloat())
     kmers = mean_read_len.concat(kmergenie.out.best_kmer).collect().map { it.unique() }
     // SOAPdenovo2
-    soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect().ifEmpty { [file( "${params.output}/EMPTY")] }, all_trimmed_single_read_paths)
-    soapdenovo2(kmers, soapdenovo2_input.out, all_trimmed_read_paths)
+    if ( ! params.skip_soap ) {
+        soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect().ifEmpty { [file( "${params.output}/EMPTY")] }, all_trimmed_single_read_paths)
+        soapdenovo2(kmers, soapdenovo2_input.out, all_trimmed_read_paths)
 
-    assemblies = spades.out.concat(soapdenovo2.out)
+        assemblies = spades.out.concat(soapdenovo2.out)
+    }
 
     // Scaffolding
     // cap3(assemblies)
