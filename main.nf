@@ -90,7 +90,7 @@ workflow {
     } else {
         assemblies = spades.out
     }
-
+    assemblies.view()
     // Scaffolding
     // cap3(assemblies)
 
