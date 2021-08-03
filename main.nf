@@ -87,6 +87,8 @@ workflow {
         soapdenovo2(kmers, soapdenovo2_input.out, all_trimmed_read_paths)
 
         assemblies = spades.out.concat(soapdenovo2.out)
+    } else {
+        assemblies = spades.out
     }
 
     // Scaffolding
