@@ -143,17 +143,23 @@ workflow {
     }
     result_table(collect_features.out.table.map{ it -> it[1] }.collect())
 
+    // this are potentiall mt contigs
     extract_contigs(assemblies.join(collect_features.out.contigs))
+
+    // try to scaffold them so more
+    cap3(extract_contigs.out)
 
     // [soapdenovo2k17, /home/go96bix/projects/marie_mt/mt/work/f0/9efd327bebd90aaa3a6a4736232b4a/soapdenovo2k17.filtered.fasta]
     // [spades, /home/go96bix/projects/marie_mt/mt/work/56/21f758d5b6fc13bdc0e3dd9585a4c1/spades.filtered.fasta]
 
-    split_fasta_ch = extract_contigs.out.map{it -> [it[0], it[1].splitFasta(by: 1)]}.transpose()
-    // [soap123, [actatga, tagag, ....]],[soap2313, [cACACa, ccattag]] --> [soap123, actatga] [soap123, tagag] ...
     // annotate
-    
+    split_fasta_ch = extract_contigs.out.map{it -> [it[0], it[1].splitFasta(by: 1)]}.transpose()
+    split_fasta_scaffolds_ch = cap3.out.map{it -> [it[0], it[1].splitFasta(by: 1)]}.transpose()
+    // [soap123, [actatga, tagag, ....]],[soap2313, [cACACa, ccattag]] --> [soap123, actatga] [soap123, tagag] ...
+        
     get_mitos_ref()
-    mitos(split_fasta_ch, get_mitos_ref.out, params.genetic_code)
+    
+    mitos(split_fasta_ch.mix(split_fasta_scaffolds_ch), get_mitos_ref.out, params.genetic_code)
     // mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
     if ( params.reference_genome ) {
         mitos_ref(reference_genome.map{ it -> [it.baseName, it] }, get_mitos_ref.out, params.genetic_code)
