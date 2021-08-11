@@ -5,7 +5,7 @@ process cap3{
     tuple val(assembly_name), path(assembly)
 
     output:
-    tuple val("${assembly_name}-cap3"), path("${assembly_name}-cap3.fasta"), optional true
+    tuple val("${assembly_name}-cap3"), path("${assembly_name}-cap3.fasta") optional true
 
     script:
     """
