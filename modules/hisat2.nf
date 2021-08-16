@@ -42,7 +42,9 @@ process hisat2 {
     PE2 = pe2_reads.baseName == 'EMPTY2' ? '' : '-2 ' + pe2_reads.join(',')
     SE = se_reads.baseName == 'EMPTY' ? '' : '-U ' + se_reads.join(',')
     """
-    hisat2 -x ${reference.baseName} ${PE1} ${PE2} ${SE} -p ${task.cpus} --new-summary --summary-file ${reference.baseName}_summary.log ${additionalParams} | samtools view -bS | samtools sort -o ${reference.baseName}.sorted.bam -T tmp --threads ${task.cpus}
+    hisat2 -x ${reference.baseName} ${PE1} ${PE2} ${SE} -p ${task.cpus} --new-summary --summary-file ${reference.baseName}_summary.log ${additionalParams} > hisat2.temp
+    samtools view -bS hisat2.temp | samtools sort -o ${reference.baseName}.sorted.bam -T tmp --threads ${task.cpus}
+    rm hisat2.temp
     """
 }
 process index_bam {
