@@ -162,7 +162,7 @@ workflow {
     mitos(split_fasta_ch.mix(split_fasta_scaffolds_ch), get_mitos_ref.out, params.genetic_code)
     // mitos(extract_contigs.out, get_mitos_ref.out, params.genetic_code)
     if ( params.reference_genome ) {
-        mitos_ref(reference_genome.map{ it -> [it.baseName, it] }, get_mitos_ref.out, params.genetic_code)
+        mitos_ref(reference_genome.map{ it -> [it.baseName, it.splitFasta(by: 1) ] }.transpose(), get_mitos_ref.out, params.genetic_code)
     }
 
     // summary
