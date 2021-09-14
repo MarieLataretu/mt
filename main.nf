@@ -37,7 +37,7 @@ if ( params.pe_reads ) {
     paired_reads_ch = Channel.empty()
 }
 if ( params.se_reads ) {
-    single_reads_ch = Channel.fromFilePairs( params.se_reads, size: 1, checkIfExists: true ).map {it -> it + ['single']}
+    single_reads_ch = Channel.fromPath( params.se_reads, checkIfExists: true ).map {it -> [it.simpleName] + [it] + ['single']}
 } else {
     single_reads_ch = Channel.empty()
 }
@@ -90,7 +90,7 @@ workflow {
     } else {
         assemblies = spades.out
     }
-    assemblies.view()
+    
     // Scaffolding
     // cap3(assemblies)
 
