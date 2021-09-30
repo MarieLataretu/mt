@@ -84,7 +84,12 @@ process soapdenovo2 {
 
     script:
     """
-    SOAPdenovo-63mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
+    if ${kmer}>62
+    then
+        SOAPdenovo-127mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
+    else
+        SOAPdenovo-63mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
+    fi
     mv soapdenovo2k${kmer}.contig soapdenovo2k${kmer}'.fasta'
     """
 }
