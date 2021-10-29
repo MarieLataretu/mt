@@ -58,7 +58,7 @@ process soapdenovo2_input {
             txt.write('[LIB]\\n')
             insert_size = ${pe_reads_and_info_py}[pe_index + 2]
             if insert_size == '0':
-                insert_size += 1
+                insert_size = '1'
             txt.write(f"avg_ins={insert_size}\\n")
             R1 = ${pe_reads_and_info_py}[pe_index].split('/')[-1]
             txt.write(f"q1={R1}\\n")
