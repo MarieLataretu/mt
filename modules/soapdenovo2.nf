@@ -85,13 +85,14 @@ process soapdenovo2 {
     tuple val("soapdenovo2k${kmer}"), path("soapdenovo2k${kmer}.fasta")
 
     script:
+    k = kmer.toInteger() > 127 ? 127 : kmer.toInteger()
     """
-    if [ ${kmer} -gt 62 ]
+    if [ ${k} -gt 62 ]
     then
-        SOAPdenovo-127mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
+        SOAPdenovo-127mer all -s ${input_yaml} -K ${k} -o soapdenovo2k${k} -c ${task.cpus}
     else
-        SOAPdenovo-63mer all -s ${input_yaml} -K ${kmer} -o soapdenovo2k${kmer} -c ${task.cpus}
+        SOAPdenovo-63mer all -s ${input_yaml} -K ${k} -o soapdenovo2k${k} -c ${task.cpus}
     fi
-    mv soapdenovo2k${kmer}.contig soapdenovo2k${kmer}'.fasta'
+    mv soapdenovo2k${k}.contig soapdenovo2k${k}'.fasta'
     """
 }
