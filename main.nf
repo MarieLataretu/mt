@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory','memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'fastqc_dir', 'fastp_dir', 'kmergenie_dir', 'soapdenovo2_dir', 'spades_dir', 'quast_dir', 'hisat2_dir', 'mmseqs2_dir', 'blast_dir', 'features_dir', 'mtContigs_dir', 'mt-contigs_dir','mitos_dir', 'multiqc_dir', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast', 'memory_multiplier', 'skip_soap'] // don't ask me why there is 'conda-cache-dir'
+Set valid_params = ['max_cores', 'cores', 'max_memory','memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'fastqc_dir', 'fastp_dir', 'kmergenie_dir', 'soapdenovo2_dir', 'spades_dir', 'spades_plasmid_dir', 'quast_dir', 'hisat2_dir', 'mmseqs2_dir', 'blast_dir', 'features_dir', 'mtContigs_dir', 'mt-contigs_dir','mitos_dir', 'multiqc_dir', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast', 'memory_multiplier', 'skip_soap'] // don't ask me why there is 'conda-cache-dir'
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
     exit 1, "ERROR: Parameter(s) $parameter_diff is/are not valid in the pipeline!\n"
@@ -18,7 +18,7 @@ if ( params.reference_annotation && ! params.reference_genome ) { exit 1, "If an
 
 include { fastqc as fastqcPre; fastqc as fastqcPost } from './modules/fastqc'
 include { fastp; get_insert_peak_from_fastp; get_mean_read_length_from_fastp } from './modules/fastp'
-include { spades_input; spades } from './modules/spades'
+include { spades_input; spades; spades_plasmid } from './modules/spades'
 include { kmergenie_input; kmergenie; soapdenovo2_input; soapdenovo2 } from './modules/soapdenovo2'
 include { cap3 } from './modules/cap3'
 include { hisat2index; hisat2; index_bam } from './modules/hisat2'
@@ -73,6 +73,7 @@ workflow {
     // SPAdes
     spades_input(all_trimmed_paired_read_paths, all_trimmed_single_read_paths)
     spades(spades_input.out, all_trimmed_read_paths)
+    spades_plasmid(spades_input.out, all_trimmed_read_paths)
     
     // SOAPdenovo2
     if ( ! params.skip_soap ) {
@@ -88,9 +89,9 @@ workflow {
         soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect().ifEmpty { [file( "${params.output}/EMPTY")] }, all_trimmed_single_read_paths)
         soapdenovo2(kmers, soapdenovo2_input.out, all_trimmed_read_paths)
 
-        assemblies = spades.out.concat(soapdenovo2.out)
+        assemblies = spades.out.concat(soapdenovo2.out).concat(spades_plasmid.out)
     } else {
-        assemblies = spades.out
+        assemblies = spades.out.concat(spades_plasmid.out)
     }
     
     // Scaffolding
@@ -173,10 +174,15 @@ workflow {
     // QUAST filtered assembly
     quast_mt_assemblys('filtered_assembly', extract_contigs.out.map{it -> it[1]}.collect(), reference_genome, reference_annotation)
 
-    // format stuff for MultiQC
-    format_kmergenie_report(kmergenie.out.report)
+    if (params.skip_soap) {
+        kmergenie_report = Channel.fromPath('no_kmergenie')
+    } else {
+        // format stuff for MultiQC
+        format_kmergenie_report(kmergenie.out.report)
+        kmergenie_report = format_kmergenie_report.out
+    }
     // run MultiQC
-    multiqc(multiqc_config, fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), format_kmergenie_report.out, hisat2.out.log.collect(), quast_complete_assembly.out.report_tsv, quast_mt_assemblys.out.report_tsv,  result_table.out)
+    multiqc(multiqc_config, fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), kmergenie_report, hisat2.out.log.collect(), quast_complete_assembly.out.report_tsv, quast_mt_assemblys.out.report_tsv,  result_table.out)
 }
 
 def helpMSG() {

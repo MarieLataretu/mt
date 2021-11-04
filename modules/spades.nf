@@ -48,3 +48,25 @@ process spades {
     mv spades/scaffolds.fasta spades/spades.fasta
     """
 }
+
+process spades_plasmid {
+    label 'spades'
+
+    if ( params.softlink_results ) { publishDir "${params.output}/plasmid/${params.spades_dir}", pattern: "spades/spades_plasmid.fasta" }
+    else { publishDir "${params.output}/plasmid/${params.spades_dir}", mode: 'copy', pattern: "spades/spades_plasmid.fasta" }
+
+    input:
+    path(input_yaml)
+    path(reads)
+
+    output:
+    tuple val('spades'), path('spades/spades_plasmid.fasta')
+
+    script:
+    """
+    spades.py --plasmid -o spades -t ${task.cpus} --disable-gzip-output --dataset ${input_yaml} --memory ${task.memory.toGiga()}
+    # removes spades assembly meta data        
+    rm -rf K*
+    mv spades/contigs.fasta spades/spades_plasmid.fasta
+    """
+}
