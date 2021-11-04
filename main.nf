@@ -127,14 +127,14 @@ workflow {
 
     // blast features
     if ( ! params.skip_blast ) {
-        blast_pident_filter(blast.out, 70)
+        blast_pident_filter(blast.out, params.pident)
         get_blast_features('blast', blast_pident_filter.out.groupTuple())
     } else{
         get_blast_features = Channel.fromPath( file ("${params.output}/no_blast"))
     }
 
     // mmseqs2 features
-    mmseqs2_pident_filter(mmseqs2_search.out, 70)
+    mmseqs2_pident_filter(mmseqs2_search.out, params.pident)
     get_mmseqs2_features('mmseqs2', mmseqs2_pident_filter.out.groupTuple())
 
     // collect features
