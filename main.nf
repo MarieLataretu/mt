@@ -100,7 +100,7 @@ workflow {
     // assemblies_scaffolds = assemblies.concat(cap3.out)
 
     // map reads back to assembly
-    hisat2index(assemblies.map{it -> it[1]})
+    hisat2index(assemblies.map{it -> it[1]}.filter{ it.size() > 0 })
     hisat2(trimmed_paired_reads.map{it -> it[1][0]}.collect().ifEmpty { file( "${params.output}/EMPTY1")}, trimmed_paired_reads.map{it -> it[1][1]}.collect().ifEmpty { file( "${params.output}/EMPTY2")}, all_trimmed_single_read_paths, hisat2index.out, params.hisat2_additional_params)
     index_bam(hisat2.out.sample_bam)
 
@@ -123,7 +123,7 @@ workflow {
         blast(featureProt_filtered.collect(), make_blast_db.out, params.genetic_code)
     }
     // mmseqs2
-    mmseqs2_create_target_db_index(assemblies.map{it -> it[1]})
+    mmseqs2_create_target_db_index(assemblies.map{it -> it[1]}.filter{ it.size() > 0 })
     mmseqs2_search(featureProt_filtered.collect(), mmseqs2_create_target_db_index.out, params.genetic_code)
 
     // blast features
