@@ -74,15 +74,17 @@ workflow {
     spades_input(all_trimmed_paired_read_paths, all_trimmed_single_read_paths)
     spades(spades_input.out, all_trimmed_read_paths)
     
-    // get kmers for SOAPdenovo2
-    kmergenie_input(all_trimmed_read_paths)
-    kmergenie(kmergenie_input.out, all_trimmed_read_paths)
-
-    get_mean_read_length_from_fastp(fastp.out.json_report)
-    mean_read_len = get_mean_two_third_read_length(get_mean_read_length_from_fastp.out.toFloat())
-    kmers = mean_read_len.concat(kmergenie.out.best_kmer).collect().map { it.unique() }
     // SOAPdenovo2
     if ( ! params.skip_soap ) {
+
+        // get kmers for SOAPdenovo2
+        kmergenie_input(all_trimmed_read_paths)
+        kmergenie(kmergenie_input.out, all_trimmed_read_paths)
+
+        get_mean_read_length_from_fastp(fastp.out.json_report)
+        mean_read_len = get_mean_two_third_read_length(get_mean_read_length_from_fastp.out.toFloat())
+        kmers = mean_read_len.concat(kmergenie.out.best_kmer).collect().map { it.unique() }
+
         soapdenovo2_input(trimmed_paired_reads.map{it -> it[1]+it[3]}.collect().ifEmpty { [file( "${params.output}/EMPTY")] }, all_trimmed_single_read_paths)
         soapdenovo2(kmers, soapdenovo2_input.out, all_trimmed_read_paths)
 
