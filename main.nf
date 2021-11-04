@@ -173,10 +173,15 @@ workflow {
     // QUAST filtered assembly
     quast_mt_assemblys('filtered_assembly', extract_contigs.out.map{it -> it[1]}.collect(), reference_genome, reference_annotation)
 
-    // format stuff for MultiQC
-    format_kmergenie_report(kmergenie.out.report)
+    if (params.skip_soap) {
+        kmergenie_report = Channel.fromPath('no_kmergenie')
+    } else {
+        // format stuff for MultiQC
+        format_kmergenie_report(kmergenie.out.report)
+        kmergenie_report = format_kmergenie_report.out
+    }
     // run MultiQC
-    multiqc(multiqc_config, fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), format_kmergenie_report.out, hisat2.out.log.collect(), quast_complete_assembly.out.report_tsv, quast_mt_assemblys.out.report_tsv,  result_table.out)
+    multiqc(multiqc_config, fastqcPre.out.collect(), fastp.out.json_report.map{ it -> it[1] }.collect(), fastqcPost.out.collect(), kmergenie_report, hisat2.out.log.collect(), quast_complete_assembly.out.report_tsv, quast_mt_assemblys.out.report_tsv,  result_table.out)
 }
 
 def helpMSG() {
