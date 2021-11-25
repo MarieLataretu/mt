@@ -23,8 +23,8 @@ process hisat2index {
 process hisat2 {
     label 'hisat2'
     
-    if ( params.softlink_results ) { publishDir "${params.output}/${params.hisat2_dir}", pattern: "*.sorted.bam" }
-    else { publishDir "${params.output}/${params.hisat2_dir}", mode: 'copy', pattern: "*.sorted.bam" }
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.hisat2_dir}" }
+    else { publishDir "${params.output}/${params.hisat2_dir}", mode: 'copy' }
 
     input:
     path(pe1_reads)
