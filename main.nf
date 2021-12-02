@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 // Parameters sanity checking
 
-Set valid_params = ['max_cores', 'cores', 'max_memory','memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'fastqc_dir', 'fastp_dir', 'kmergenie_dir', 'soapdenovo2_dir', 'spades_dir', 'spades_plasmid_dir', 'quast_dir', 'hisat2_dir', 'mmseqs2_dir', 'blast_dir', 'features_dir', 'mtContigs_dir', 'mt-contigs_dir','mitos_dir', 'multiqc_dir', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast', 'memory_multiplier', 'skip_soap'] // don't ask me why there is 'conda-cache-dir'
+Set valid_params = ['max_cores', 'cores', 'max_memory','memory', 'profile', 'help', 'genus', 'se_reads', 'pe_reads', 'reference_genome', 'reference_annotation', 'fastp_additional_params', 'hisat2_additional_params', 'genetic_code', 'contig_len_filter', 'contig_high_read_cov_filter', 'output', 'fastqc_dir', 'fastp_dir', 'kmergenie_dir', 'soapdenovo2_dir', 'spades_dir', 'spades_plasmid_dir', 'quast_dir', 'hisat2_dir', 'mmseqs2_dir', 'blast_dir', 'features_dir', 'mtContigs_dir', 'mt-contigs_dir','mitos_dir', 'multiqc_dir', 'condaCacheDir', 'softlink_results', 'conda-cache-dir', 'skip_blast', 'memory_multiplier', 'skip_soap', 'pident'] // don't ask me why there is 'conda-cache-dir'
 
 def parameter_diff = params.keySet() - valid_params
 if (parameter_diff.size() != 0){
