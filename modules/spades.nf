@@ -52,8 +52,8 @@ process spades {
 process spades_plasmid {
     label 'spades'
 
-    if ( params.softlink_results ) { publishDir "${params.output}/plasmid/${params.spades_dir}", pattern: "spades/spades_plasmid.fasta" }
-    else { publishDir "${params.output}/plasmid/${params.spades_dir}", mode: 'copy', pattern: "spades/spades_plasmid.fasta" }
+    if ( params.softlink_results ) { publishDir "${params.output}/${params.spades_dir}/plasmid", pattern: "spades/spades_plasmid.fasta" }
+    else { publishDir "${params.output}/${params.spades_dir}/plasmid", mode: 'copy', pattern: "spades/spades_plasmid.fasta" }
 
     input:
     path(input_yaml)
