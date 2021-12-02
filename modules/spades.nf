@@ -60,7 +60,7 @@ process spades_plasmid {
     path(reads)
 
     output:
-    tuple val('spades'), path('spades/spades_plasmid.fasta')
+    tuple val('spades_plasmid'), path('spades/spades_plasmid.fasta')
 
     script:
     """
