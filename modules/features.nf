@@ -46,7 +46,7 @@ process get_95th_percentile {
     #!/usr/bin/env python3
     import pandas as pd
 
-    df = pd.read_csv("${read_coverage_tsv}", sep='\\t', names=['contig', 'length', 'norm_read_coverage'], header=0)
+    df = pd.read_csv("${read_coverage_tsv}", sep='\\t', names=['contig', 'length', 'norm_read_coverage'])
     print(df.head())
     quantile_95 = df['norm_read_coverage'].quantile(q=.95)
     df.loc[df.norm_read_coverage >= quantile_95, 'in_95_quantile_read_coverage'] = True
