@@ -120,7 +120,8 @@ process get_features {
     df_hits = pd.DataFrame.from_dict(number_of_hit_dict, orient='index', columns=["${tool}_hits"])
     df_hits.index.name = 'contig'
     df_hits.index = df_hits.index.map(str)
-    
+
+    assert len(results)!=0, "no contigs passed quality filter"
     df = pd.concat(results, axis=0, ignore_index=True)
     df.columns = columns
 
